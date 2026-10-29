@@ -2,10 +2,10 @@
 -- Номера страниц не указаны (page = NONE) — проверить цифры и страницы по книгам.
 DELETE defaults_to; DELETE attr_default; DELETE overrides;
 INSERT INTO attr_default [
-	{ id: 'broadsword_dx', skill: skill:broadsword, attribute: 'DX', mod: -5 },
-	{ id: 'stealth_dx', skill: skill:stealth, attribute: 'DX', mod: -5 },
-	{ id: 'stealth_iq', skill: skill:stealth, attribute: 'IQ', mod: -5 },
-	{ id: 'survival_per', skill: skill:survival, attribute: 'Per', mod: -5 }
+	{ id: 'broadsword_dx', skill: skill:broadsword, attribute: ref_attribute:DX, mod: -5 },
+	{ id: 'stealth_dx', skill: skill:stealth, attribute: ref_attribute:DX, mod: -5 },
+	{ id: 'stealth_iq', skill: skill:stealth, attribute: ref_attribute:IQ, mod: -5 },
+	{ id: 'survival_per', skill: skill:survival, attribute: ref_attribute:Per, mod: -5 }
 ];
 RELATE skill:broadsword->defaults_to->skill:shortsword SET mod = -2;
 RELATE skill:broadsword->defaults_to->skill:two_handed_sword SET mod = -4;

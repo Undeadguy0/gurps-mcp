@@ -9,8 +9,8 @@ DEFINE FIELD OVERWRITE cap ON defaults_to TYPE option<int>;
 
 -- Дефолт навыка от атрибута (DX-5 и т.п.).
 DEFINE TABLE OVERWRITE attr_default SCHEMAFULL;
-DEFINE FIELD OVERWRITE skill ON attr_default TYPE record<skill>;
-DEFINE FIELD OVERWRITE attribute ON attr_default TYPE string ASSERT $value IN ['ST', 'DX', 'IQ', 'HT', 'Will', 'Per'];
+DEFINE FIELD OVERWRITE skill ON attr_default TYPE record<skill> ASSERT record::exists($value);
+DEFINE FIELD OVERWRITE attribute ON attr_default TYPE record<ref_attribute> REFERENCE ON DELETE REJECT ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE mod ON attr_default TYPE int;
 
 -- Пререквизит: что угодно -> skill|trait. min_level — минимальный уровень/порог.

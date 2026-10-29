@@ -1,0 +1,115 @@
+# Проверки справочников и ссылочной целостности.
+# Тестовые строки (TEST_*) создаются только в изолированной тестовой БД.
+name = "ref_integrity"
+tags = ["refs"]
+
+[[cases]]
+name = "valid_item_accepted"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:test_ok SET name = 'TEST item ok', pack = pack:basic, category = 'melee', tl = ref_tl:TL2, attack_modes = [{ name: 'swing', damage: { raw: 'sw cut', type: ref_damage_type:cut } }] RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "typo_damage_type_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:test_bad_dt SET name = 'TEST bad dt', pack = pack:basic, category = 'melee', attack_modes = [{ name: 'swing', damage: { raw: 'sw cutt', type: ref_damage_type:cutt } }];"
+allow = false
+error_contains = "damage.type"
+
+[[cases]]
+name = "string_damage_type_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:test_str_dt SET name = 'TEST str dt', pack = pack:basic, category = 'melee', attack_modes = [{ name: 'swing', damage: { type: 'cut' } }];"
+allow = false
+error_contains = "damage.type"
+
+[[cases]]
+name = "bad_damage_modifier_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:test_bad_mod SET name = 'TEST bad mod', pack = pack:basic, category = 'melee', attack_modes = [{ name: 'swing', damage: { type: ref_damage_type:cut, modifiers: [ref_damage_modifier:nope] } }];"
+allow = false
+error_contains = "modifiers"
+
+[[cases]]
+name = "nonexistent_hit_location_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:test_bad_loc SET name = 'TEST bad loc', pack = pack:basic, category = 'armor', armor = { locations: [{ loc: ref_hit_location:tentacle, dr: 1 }] };"
+allow = false
+error_contains = "loc"
+
+[[cases]]
+name = "bad_lc_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:test_bad_lc SET name = 'TEST bad lc', pack = pack:basic, category = 'gear', lc = ref_lc:LC9;"
+allow = false
+error_contains = "lc"
+
+[[cases]]
+name = "lc_level_out_of_range_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_lc:LC9 SET code = 'LC9', name_ru = 'TEST', level = 9, pack = pack:basic;"
+allow = false
+error_contains = "level"
+
+[[cases]]
+name = "ref_code_must_match_id"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_damage_type:test_x SET code = 'other', name_ru = 'TEST', pack = pack:basic;"
+allow = false
+error_contains = "code"
+
+[[cases]]
+name = "bad_skill_attribute_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:test_bad_attr SET name = 'TEST skill', pack = pack:basic, attribute = ref_attribute:LUCK, difficulty = ref_difficulty:A;"
+allow = false
+error_contains = "attribute"
+
+[[cases]]
+name = "technique_difficulty_E_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE technique:test_t SET name = 'TEST tech', pack = pack:basic, parent_skill = skill:broadsword, difficulty = ref_difficulty:E, default_mod = -2;"
+allow = false
+error_contains = "difficulty"
+
+[[cases]]
+name = "delete_referenced_damage_type_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_damage_type:cut;"
+allow = false
+error_contains = "Cannot delete"
+
+[[cases]]
+name = "delete_referenced_hit_location_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_hit_location:torso;"
+allow = false
+error_contains = "Cannot delete"
+
+[[cases]]
+name = "delete_referenced_attribute_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_attribute:DX;"
+allow = false
+error_contains = "Cannot delete"
+
+[[cases]]
+name = "delete_referenced_self_control_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_self_control:cr12;"
+allow = false
+error_contains = "Cannot delete"
