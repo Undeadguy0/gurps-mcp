@@ -1,0 +1,73 @@
+# Заклинания: школы, классы, сложность, сопротивление, has_spell.
+name = "spells"
+tags = ["spells"]
+
+[[cases]]
+name = "spell_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE spell:['basic', 't_s1'] SET colleges = [ref_college:college_a], classes = [ref_spell_class:regular, ref_spell_class:resisted], resist = ref_attribute:HT, difficulty = ref_difficulty:VH, casting_time = { raw: 'x' }, duration = { raw: 'x', kind: 'instant' }, cost = { raw: 'x' }, prereqs = { type: 'spells_from_college', college: ref_college:college_b, count: 1 } RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "no_college_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE spell:['basic', 't_s2'] SET colleges = [], classes = [ref_spell_class:regular], difficulty = ref_difficulty:H, casting_time = { raw: 'x' }, duration = { raw: 'x', kind: 'instant' }, cost = { raw: 'x' };"
+allow = false
+error_contains = "colleges"
+
+[[cases]]
+name = "unknown_college_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE spell:['basic', 't_s3'] SET colleges = [ref_college:nope], classes = [ref_spell_class:regular], difficulty = ref_difficulty:H, casting_time = { raw: 'x' }, duration = { raw: 'x', kind: 'instant' }, cost = { raw: 'x' };"
+allow = false
+error_contains = "colleges"
+
+[[cases]]
+name = "only_modifier_class_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE spell:['basic', 't_s4'] SET colleges = [ref_college:college_a], classes = [ref_spell_class:resisted], difficulty = ref_difficulty:H, casting_time = { raw: 'x' }, duration = { raw: 'x', kind: 'instant' }, cost = { raw: 'x' };"
+allow = false
+error_contains = "classes"
+
+[[cases]]
+name = "difficulty_A_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE spell:['basic', 't_s5'] SET colleges = [ref_college:college_a], classes = [ref_spell_class:regular], difficulty = ref_difficulty:A, casting_time = { raw: 'x' }, duration = { raw: 'x', kind: 'instant' }, cost = { raw: 'x' };"
+allow = false
+error_contains = "difficulty"
+
+[[cases]]
+name = "bad_resist_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE spell:['basic', 't_s6'] SET colleges = [ref_college:college_a], classes = [ref_spell_class:regular], difficulty = ref_difficulty:H, resist = ref_attribute:LUCK, casting_time = { raw: 'x' }, duration = { raw: 'x', kind: 'instant' }, cost = { raw: 'x' };"
+allow = false
+error_contains = "resist"
+
+[[cases]]
+name = "bad_duration_kind_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE spell:['basic', 't_s7'] SET colleges = [ref_college:college_a], classes = [ref_spell_class:regular], difficulty = ref_difficulty:H, casting_time = { raw: 'x' }, duration = { raw: 'x', kind: 'forever' }, cost = { raw: 'x' };"
+allow = false
+error_contains = "duration.kind"
+
+[[cases]]
+name = "pack_without_spell_system_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE spell:['homebrew', 't_s8'] SET colleges = [ref_college:college_a], classes = [ref_spell_class:regular], difficulty = ref_difficulty:H, casting_time = { raw: 'x' }, duration = { raw: 'x', kind: 'instant' }, cost = { raw: 'x' };"
+allow = false
+error_contains = "spell_system"
+
+[[cases]]
+name = "has_spell_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "RELATE character:test_hero->has_spell->spell:['basic', 'spell_b'] SET points = 1;"
+allow = true

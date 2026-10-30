@@ -1,0 +1,71 @@
+# Таблица translation: уникальность (record, lang, field), формат, каскад.
+name = "translation"
+tags = ["translation"]
+
+[[cases]]
+name = "translation_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE translation SET record = skill:['basic', 'sword_a'], lang = 'en', field = 'description', text = 'TEST' RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "duplicate_translation_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE translation SET record = skill:['basic', 'sword_a'], lang = 'ru', field = 'name', text = 'дубль';"
+allow = false
+error_contains = "translation_uniq"
+
+[[cases]]
+name = "bad_lang_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE translation SET record = skill:['basic', 'sword_a'], lang = 'russian', field = 'name', text = 'x';"
+allow = false
+error_contains = "lang"
+
+[[cases]]
+name = "bad_field_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE translation SET record = skill:['basic', 'sword_a'], lang = 'ru', field = 'title', text = 'x';"
+allow = false
+error_contains = "field"
+
+[[cases]]
+name = "spec_field_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE translation SET record = skill:['basic', 'outdoor_a'], lang = 'en', field = 'spec.spec_a', text = 'Spec A';"
+allow = true
+
+[[cases]]
+name = "missing_record_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE translation SET record = skill:['basic', 'ghost'], lang = 'ru', field = 'name', text = 'x';"
+allow = false
+error_contains = "record"
+
+[[cases]]
+name = "empty_text_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE translation SET record = skill:['basic', 'sword_a'], lang = 'de', field = 'name', text = '  ';"
+allow = false
+error_contains = "text"
+
+[[cases]]
+name = "tr_fallback_to_en"
+kind = "sql_expect"
+actor = "root"
+sql = "IF fn::tr(skill:['basic', 'sword_b'], 'de', 'name') != 'Sword B' { THROW 'fallback' };"
+allow = true
+
+[[cases]]
+name = "delete_record_cascades_translations"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['basic', 't_tr'] SET attribute = ref_attribute:DX, difficulty = ref_difficulty:A; CREATE translation SET record = skill:['basic', 't_tr'], lang = 'ru', field = 'name', text = 'x'; DELETE skill:['basic', 't_tr']; IF count(SELECT * FROM translation WHERE record = skill:['basic', 't_tr']) > 0 { THROW 'cascade' };"
+allow = true

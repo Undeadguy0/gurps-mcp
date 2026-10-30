@@ -1,0 +1,73 @@
+# Дерево пререквизитов (and/or/spell/spells_from_college/spells_any/magery/attribute/advantage/skill/technique).
+name = "prereq"
+tags = ["prereq"]
+
+[[cases]]
+name = "tree_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['basic', 't_p1'] SET attribute = ref_attribute:IQ, difficulty = ref_difficulty:H, prereqs = { type: 'and', of: [{ type: 'attribute', attribute: ref_attribute:IQ, min: 12 }, { type: 'or', of: [{ type: 'skill', skill: skill:['basic', 'sword_a'], min: 12 }, { type: 'advantage', trait: trait:['basic', 'magery'], level: 1 }] }] } RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "unknown_node_type_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['basic', 't_p2'] SET attribute = ref_attribute:IQ, difficulty = ref_difficulty:H, prereqs = { type: 'xor', of: [] };"
+allow = false
+error_contains = "prereqs"
+
+[[cases]]
+name = "empty_and_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['basic', 't_p3'] SET attribute = ref_attribute:IQ, difficulty = ref_difficulty:H, prereqs = { type: 'and', of: [] };"
+allow = false
+error_contains = "prereqs"
+
+[[cases]]
+name = "missing_skill_ref_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['basic', 't_p4'] SET attribute = ref_attribute:IQ, difficulty = ref_difficulty:H, prereqs = { type: 'skill', skill: skill:['basic', 'ghost'] };"
+allow = false
+error_contains = "prereqs"
+
+[[cases]]
+name = "wrong_table_ref_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['basic', 't_p5'] SET attribute = ref_attribute:IQ, difficulty = ref_difficulty:H, prereqs = { type: 'spell', spell: skill:['basic', 'sword_a'] };"
+allow = false
+error_contains = "prereqs"
+
+[[cases]]
+name = "extra_key_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['basic', 't_p6'] SET attribute = ref_attribute:IQ, difficulty = ref_difficulty:H, prereqs = { type: 'magery', level: 1, note: 'x' };"
+allow = false
+error_contains = "prereqs"
+
+[[cases]]
+name = "deep_bad_leaf_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_p7'] SET kind = 'adv', cost = { type: 'fixed' }, prereqs = { type: 'or', of: [{ type: 'and', of: [{ type: 'attribute', attribute: ref_attribute:LUCK, min: 1 }] }] };"
+allow = false
+error_contains = "prereqs"
+
+[[cases]]
+name = "technique_prereq_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE technique:['basic', 't_p8'] SET parent_skill = skill:['basic', 'sword_a'], difficulty = ref_difficulty:A, default_mod = -1, prereqs = { type: 'technique', technique: technique:['basic', 'strike_a'] };"
+allow = true
+
+[[cases]]
+name = "delete_prereq_target_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE spell:['basic', 'spell_a'];"
+allow = false
+error_contains = "Cannot delete"

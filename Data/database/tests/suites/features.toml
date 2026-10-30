@@ -1,0 +1,103 @@
+# Типизированные features: 6 видов, проверка ссылок, op add/set.
+name = "features"
+tags = ["features"]
+
+[[cases]]
+name = "all_six_kinds_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f1'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'attribute_bonus', attribute: ref_attribute:ST, amount: 1 }, { kind: 'skill_bonus', category: ref_skill_category:melee, amount: 1 }, { kind: 'dr_bonus', amount: 2, damage_type: ref_damage_type:cr }, { kind: 'damage_bonus', skill: skill:['basic', 'sword_a'], amount: 1, per_die: true }, { kind: 'cost_reduction', attribute: ref_attribute:HT, percent: 20 }, { kind: 'reaction_bonus', amount: -1 }] RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "unknown_kind_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f2'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'luck_bonus', amount: 1 }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "bad_attribute_target_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f3'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'attribute_bonus', attribute: ref_attribute:LUCK, amount: 1 }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "missing_skill_target_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f4'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'skill_bonus', skill: skill:['basic', 'ghost'], amount: 1 }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "string_target_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f5'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'skill_bonus', skill: 'sword_a', amount: 1 }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "set_without_payload_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f6'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'damage_bonus', op: 'set', attack_mode: attack_mode:['basic', 'punch'] }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "claws_set_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f7'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'damage_bonus', op: 'set', attack_mode: attack_mode:['basic', 'kick'], damage_type: ref_damage_type:imp, reach: [1] }];"
+allow = true
+
+[[cases]]
+name = "bad_op_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f8'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'reaction_bonus', op: 'mul', amount: 1 }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "percent_out_of_range_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f9'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'cost_reduction', attribute: ref_attribute:ST, percent: 150 }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "extra_key_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_f10'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'reaction_bonus', amount: 1, target: 'x' }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "item_feature_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:['basic', 't_f11'] SET category = 'gear', features = [{ kind: 'damage_bonus', attack_mode: attack_mode:['basic', 'bite'], amount: 1 }];"
+allow = true
+
+[[cases]]
+name = "delete_feature_target_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE attack_mode:['basic', 'punch'];"
+allow = false
+error_contains = "Cannot delete"
+
+[[cases]]
+name = "natural_templates_present"
+kind = "sql_expect"
+actor = "root"
+sql = "IF count(SELECT * FROM attack_mode WHERE natural = true) < 3 { THROW 'natural' };"
+allow = true

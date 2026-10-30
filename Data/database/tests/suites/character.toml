@@ -1,0 +1,97 @@
+# Персонаж: специализации, атрибуты, вложенность предметов, журнал очков, личный пак.
+name = "character"
+tags = ["character"]
+
+[[cases]]
+name = "spec_required_missing_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "RELATE character:test_hero->has_skill->skill:['basic', 'outdoor_a'] SET points = 1;"
+allow = false
+error_contains = "spec"
+
+[[cases]]
+name = "unknown_spec_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "RELATE character:test_hero->has_skill->skill:['basic', 'outdoor_a'] SET points = 1, spec = 'spec_z';"
+allow = false
+error_contains = "spec"
+
+[[cases]]
+name = "spec_on_plain_skill_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "RELATE character:test_hero->has_skill->skill:['basic', 'sword_a'] SET points = 1, spec = 'spec_a';"
+allow = false
+error_contains = "spec"
+
+[[cases]]
+name = "duplicate_attribute_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "UPDATE character:test_hero SET attributes = [{ attribute: ref_attribute:ST, levels: 1 }, { attribute: ref_attribute:ST, levels: 2 }];"
+allow = false
+error_contains = "attributes"
+
+[[cases]]
+name = "unknown_attribute_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "UPDATE character:test_hero SET attributes = [{ attribute: ref_attribute:LUCK, levels: 1 }];"
+allow = false
+error_contains = "attribute"
+
+[[cases]]
+name = "contained_in_non_container_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "RELATE character:test_hero->owns_item->item:['basic', 'armor_a'] SET contained_in = owns_item:hero_sword;"
+allow = false
+error_contains = "contained_in"
+
+[[cases]]
+name = "contained_in_container_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "RELATE character:test_hero->owns_item->item:['basic', 'armor_a'] SET contained_in = owns_item:hero_bag;"
+allow = true
+
+[[cases]]
+name = "ledger_spend_positive_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE point_ledger SET character = character:test_hero, kind = 'spend', delta = 5;"
+allow = false
+error_contains = "delta"
+
+[[cases]]
+name = "ledger_bad_target_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE point_ledger SET character = character:test_hero, kind = 'spend', delta = -1, target = skill:['basic', 'ghost'];"
+allow = false
+error_contains = "target"
+
+[[cases]]
+name = "ledger_sum"
+kind = "sql_expect"
+actor = "root"
+sql = "IF math::sum(SELECT VALUE delta FROM point_ledger WHERE character = character:test_hero) != 78 { THROW 'sum' };"
+allow = true
+
+[[cases]]
+name = "custom_pack_needs_owner"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE pack:custom_x SET name = 'x', abbrev = 'CX', kind = 'custom';"
+allow = false
+error_contains = "owner"
+
+[[cases]]
+name = "owner_on_official_pack_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE pack:x2 SET name = 'x', abbrev = 'X2', kind = 'official', owner = character:test_hero;"
+allow = false
+error_contains = "owner"

@@ -1,5 +1,4 @@
-# Проверки справочников и ссылочной целостности.
-# Тестовые строки (TEST_*) создаются только в изолированной тестовой БД.
+# Справочники и ссылочная целостность. Тестовые записи создаются в изолированной тестовой БД.
 name = "ref_integrity"
 tags = ["refs"]
 
@@ -7,14 +6,14 @@ tags = ["refs"]
 name = "valid_item_accepted"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE item:test_ok SET name = 'TEST item ok', pack = pack:basic, category = 'melee', tl = ref_tl:TL2, attack_modes = [{ name: 'swing', damage: { raw: 'sw cut', type: ref_damage_type:cut } }] RETURN AFTER;"
+sql = "CREATE item:['basic', 't_ok'] SET category = 'melee', tl = ref_tl:TL2, attack_modes = [{ name: 'swing', damage: { raw: 'x', type: ref_damage_type:cut } }] RETURN AFTER;"
 allow = true
 
 [[cases]]
 name = "typo_damage_type_rejected"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE item:test_bad_dt SET name = 'TEST bad dt', pack = pack:basic, category = 'melee', attack_modes = [{ name: 'swing', damage: { raw: 'sw cutt', type: ref_damage_type:cutt } }];"
+sql = "CREATE item:['basic', 't_dt'] SET category = 'melee', attack_modes = [{ name: 'swing', damage: { type: ref_damage_type:cutt } }];"
 allow = false
 error_contains = "damage.type"
 
@@ -22,7 +21,7 @@ error_contains = "damage.type"
 name = "string_damage_type_rejected"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE item:test_str_dt SET name = 'TEST str dt', pack = pack:basic, category = 'melee', attack_modes = [{ name: 'swing', damage: { type: 'cut' } }];"
+sql = "CREATE item:['basic', 't_sdt'] SET category = 'melee', attack_modes = [{ name: 'swing', damage: { type: 'cut' } }];"
 allow = false
 error_contains = "damage.type"
 
@@ -30,7 +29,7 @@ error_contains = "damage.type"
 name = "bad_damage_modifier_rejected"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE item:test_bad_mod SET name = 'TEST bad mod', pack = pack:basic, category = 'melee', attack_modes = [{ name: 'swing', damage: { type: ref_damage_type:cut, modifiers: [ref_damage_modifier:nope] } }];"
+sql = "CREATE item:['basic', 't_mod'] SET category = 'melee', attack_modes = [{ name: 'swing', damage: { type: ref_damage_type:cut, modifiers: [ref_damage_modifier:nope] } }];"
 allow = false
 error_contains = "modifiers"
 
@@ -38,7 +37,7 @@ error_contains = "modifiers"
 name = "nonexistent_hit_location_rejected"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE item:test_bad_loc SET name = 'TEST bad loc', pack = pack:basic, category = 'armor', armor = { locations: [{ loc: ref_hit_location:tentacle, dr: 1 }] };"
+sql = "CREATE item:['basic', 't_loc'] SET category = 'armor', armor = { locations: [{ loc: ref_hit_location:tentacle, dr: 1 }] };"
 allow = false
 error_contains = "loc"
 
@@ -46,7 +45,7 @@ error_contains = "loc"
 name = "bad_lc_rejected"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE item:test_bad_lc SET name = 'TEST bad lc', pack = pack:basic, category = 'gear', lc = ref_lc:LC9;"
+sql = "CREATE item:['basic', 't_lc'] SET category = 'gear', lc = ref_lc:LC9;"
 allow = false
 error_contains = "lc"
 
@@ -54,7 +53,7 @@ error_contains = "lc"
 name = "lc_level_out_of_range_rejected"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE ref_lc:LC9 SET code = 'LC9', name_ru = 'TEST', level = 9, pack = pack:basic;"
+sql = "CREATE ref_lc:LC9 SET code = 'LC9', level = 9, pack = pack:basic;"
 allow = false
 error_contains = "level"
 
@@ -62,7 +61,7 @@ error_contains = "level"
 name = "ref_code_must_match_id"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE ref_damage_type:test_x SET code = 'other', name_ru = 'TEST', pack = pack:basic;"
+sql = "CREATE ref_damage_type:test_x SET code = 'other', pack = pack:basic;"
 allow = false
 error_contains = "code"
 
@@ -70,7 +69,7 @@ error_contains = "code"
 name = "bad_skill_attribute_rejected"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE skill:test_bad_attr SET name = 'TEST skill', pack = pack:basic, attribute = ref_attribute:LUCK, difficulty = ref_difficulty:A;"
+sql = "CREATE skill:['basic', 't_attr'] SET attribute = ref_attribute:LUCK, difficulty = ref_difficulty:A;"
 allow = false
 error_contains = "attribute"
 
@@ -78,9 +77,55 @@ error_contains = "attribute"
 name = "technique_difficulty_E_rejected"
 kind = "sql_expect"
 actor = "root"
-sql = "CREATE technique:test_t SET name = 'TEST tech', pack = pack:basic, parent_skill = skill:broadsword, difficulty = ref_difficulty:E, default_mod = -2;"
+sql = "CREATE technique:['basic', 't_t'] SET parent_skill = skill:['basic', 'sword_a'], difficulty = ref_difficulty:E, default_mod = -2;"
 allow = false
 error_contains = "difficulty"
+
+[[cases]]
+name = "string_id_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:plain SET attribute = ref_attribute:DX, difficulty = ref_difficulty:A;"
+allow = false
+error_contains = "id"
+
+[[cases]]
+name = "unknown_pack_in_id_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['nopack', 'x'] SET attribute = ref_attribute:DX, difficulty = ref_difficulty:A;"
+allow = false
+error_contains = "pack"
+
+[[cases]]
+name = "sid_and_pack_derived_from_id"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['homebrew', 't_der'] SET attribute = ref_attribute:DX, difficulty = ref_difficulty:A; IF (SELECT VALUE sid FROM ONLY skill:['homebrew', 't_der']) != 't_der' { THROW 'sid' };"
+allow = true
+
+[[cases]]
+name = "effective_prefers_higher_priority"
+kind = "sql_expect"
+actor = "root"
+sql = "IF fn::effective('skill', 'sword_a').id != skill:['homebrew', 'sword_a'] { THROW 'override' };"
+allow = true
+
+[[cases]]
+name = "shield_requires_shield_block"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:['basic', 't_sh'] SET category = 'shield';"
+allow = false
+error_contains = "shield"
+
+[[cases]]
+name = "shield_block_on_non_shield_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:['basic', 't_sh2'] SET category = 'gear', shield = { db: 1 };"
+allow = false
+error_contains = "shield"
 
 [[cases]]
 name = "delete_referenced_damage_type_rejected"
@@ -111,5 +156,21 @@ name = "delete_referenced_self_control_rejected"
 kind = "sql_expect"
 actor = "root"
 sql = "DELETE ref_self_control:cr12;"
+allow = false
+error_contains = "Cannot delete"
+
+[[cases]]
+name = "delete_referenced_college_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_college:college_a;"
+allow = false
+error_contains = "Cannot delete"
+
+[[cases]]
+name = "delete_used_pack_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE pack:basic;"
 allow = false
 error_contains = "Cannot delete"
