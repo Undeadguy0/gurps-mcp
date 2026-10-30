@@ -9,6 +9,7 @@ pub mod model;
 pub mod points;
 pub mod prereq;
 pub mod skills;
+pub mod st_damage;
 
 use model::Input;
 use serde::Serialize;

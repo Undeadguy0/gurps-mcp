@@ -73,16 +73,6 @@ pub fn values(
     out
 }
 
-pub fn st_damage(refs: &Refs, st: i64, miss: &mut Missing) -> Option<(Dice, Dice)> {
-    match refs.st_damage.iter().find(|r| r.st == st) {
-        Some(r) => Some((r.thr, r.sw)),
-        None => {
-            miss.add(format!("ref_st_damage для ST {st}"));
-            None
-        }
-    }
-}
-
 pub fn basic_lift(refs: &Refs, st: f64, miss: &mut Missing) -> Option<f64> {
     let Some(div) = refs.value("basic_lift_divisor") else {
         miss.add("ref_rule:basic_lift_divisor");
@@ -110,7 +100,7 @@ pub fn compute(inp: &Input, fx: &Effects, miss: &mut Missing) -> Derived {
     let lifting_st = st.map(|s| s + fx.lifting_st());
     let striking_st = st.map(|s| s + fx.striking_st());
     let basic_lift = lifting_st.and_then(|s| basic_lift(&inp.refs, s, miss));
-    let dmg = striking_st.and_then(|s| st_damage(&inp.refs, s.floor() as i64, miss));
+    let dmg = striking_st.and_then(|s| super::st_damage::lookup(&inp.refs, s.floor() as i64, miss));
     let defense_bonus = ["dodge", "parry", "block"]
         .iter()
         .map(|d| (d.to_string(), fx.defense(d)))
