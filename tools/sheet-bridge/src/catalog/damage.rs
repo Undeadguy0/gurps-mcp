@@ -1,9 +1,9 @@
 //! Разбор строк урона/досягаемости/парирования листа в структуры атаки схемы и обратно.
 
-use super::Ctx;
+use super::{skills, Ctx};
 use crate::jsonx;
 use crate::report::{Dir, Report};
-use crate::sheet::AttackDef;
+use crate::sheet::{AttackDef, SkillDamageBonus, SkillDefault};
 use crate::sql::{Rec, Sv};
 use serde_json::Value as J;
 
@@ -89,21 +89,44 @@ pub fn attack_to_db(ctx: &mut Ctx, a: &AttackDef, default_skill: &str, what: &st
             m.set("parry_raw", Sv::str("No"));
         }
     }
-    let mut lost = vec![];
     if a.skill_modifier != 0 {
-        lost.push("skill_modifier");
+        m.set("skill_modifier", Sv::Int(a.skill_modifier as i64));
     }
-    if a.technique.is_some() {
-        lost.push("technique");
+    if let Some(t) = &a.technique {
+        match ctx.find("technique", t) {
+            Some(r) => {
+                m.set("technique", Sv::Rec(r));
+            }
+            None => ctx.gap("attack.technique: техника не найдена, отброшена", format!("{what} -> {t}")),
+        }
     }
-    if !a.defaults.is_empty() {
-        lost.push("defaults");
+    let mut defs = Vec::new();
+    for d in &a.defaults {
+        match d {
+            SkillDefault::Attribute { attribute, modifier } => defs.push(
+                Sv::obj()
+                    .with("attribute", skills::attr_rec(attribute))
+                    .with("mod", Sv::Int(*modifier as i64)),
+            ),
+            SkillDefault::Skill { skill, modifier } => match ctx.find("skill", skill) {
+                Some(r) => defs.push(Sv::obj().with("skill", Sv::Rec(r)).with("mod", Sv::Int(*modifier as i64))),
+                None => ctx.gap(
+                    "attack.defaults: навык-цель не найден, умолчание отброшено",
+                    format!("{what} -> {skill}"),
+                ),
+            },
+        }
     }
-    if a.skill_damage_bonus.is_some() {
-        lost.push("skill_damage_bonus");
+    if !defs.is_empty() {
+        m.set("defaults", Sv::Arr(defs));
     }
-    for l in lost {
-        ctx.gap(&format!("attack.{l}: в схеме нет, отброшено"), what.to_string());
+    if let Some(b) = a.skill_damage_bonus {
+        m.set(
+            "skill_damage_bonus",
+            Sv::obj()
+                .with("min_relative", Sv::Int(b.min_relative as i64))
+                .with("per_die", Sv::Int(b.per_die as i64)),
+        );
     }
     m
 }
@@ -151,9 +174,28 @@ pub fn attack_from_db(m: &J, mode: String, weapon_skill: &str, report: &mut Repo
         reach,
         parry,
         skill: skill.filter(|s| s != weapon_skill),
-        skill_modifier: 0,
-        technique: None,
-        defaults: vec![],
-        skill_damage_bonus: None,
+        skill_modifier: jsonx::i(m, "skill_modifier").unwrap_or(0) as i32,
+        technique: jsonx::sid_of(m, "technique").map(|s| crate::ids::sid_to_kebab(&s)),
+        defaults: jsonx::arr(m, "defaults")
+            .iter()
+            .filter_map(|d| {
+                let modifier = jsonx::i(d, "mod").unwrap_or(0) as i32;
+                if let Some(c) = jsonx::code(d, "attribute") {
+                    Some(SkillDefault::Attribute {
+                        attribute: crate::ids::ref_to_stat(&c),
+                        modifier,
+                    })
+                } else {
+                    jsonx::sid_of(d, "skill").map(|s| SkillDefault::Skill {
+                        skill: crate::ids::sid_to_kebab(&s),
+                        modifier,
+                    })
+                }
+            })
+            .collect(),
+        skill_damage_bonus: m.get("skill_damage_bonus").filter(|v| v.is_object()).map(|b| SkillDamageBonus {
+            min_relative: jsonx::i(b, "min_relative").unwrap_or(0) as i32,
+            per_die: jsonx::i(b, "per_die").unwrap_or(0) as i32,
+        }),
     }
 }

@@ -1,0 +1,65 @@
+# Справочники расчёта: ref_rule, ref_skill_cost, ref_st_damage, база атрибутов.
+name = "calc_refs"
+tags = ["calc"]
+
+[[cases]]
+name = "rule_value_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_rule:t_r1 SET code = 't_r1', value = 2, pack = pack:basic RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "rule_both_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_rule:t_r2 SET code = 't_r2', value = 2, text = 'x', pack = pack:basic;"
+allow = false
+error_contains = "ref_rule"
+
+[[cases]]
+name = "rule_none_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_rule:t_r3 SET code = 't_r3', pack = pack:basic;"
+allow = false
+error_contains = "ref_rule"
+
+[[cases]]
+name = "skill_cost_dup_points_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_skill_cost:t_p SET code = 't_p', points = 1, level_offset = 9, pack = pack:basic;"
+allow = false
+error_contains = "ref_skill_cost_points"
+
+[[cases]]
+name = "st_damage_dup_st_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_st_damage:t_s SET code = 't_s', st = 5, thr = { dice: 1, mod: 0 }, sw = { dice: 1, mod: 0 }, pack = pack:basic;"
+allow = false
+error_contains = "ref_st_damage_st"
+
+[[cases]]
+name = "attr_base_from_missing_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "UPDATE ref_attribute:HP SET base_from = [ref_attribute:LUCK];"
+allow = false
+error_contains = "base_from"
+
+[[cases]]
+name = "attr_base_from_delete_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_attribute:IQ;"
+allow = false
+
+[[cases]]
+name = "technique_costs_positive"
+kind = "sql_expect"
+actor = "root"
+sql = "UPDATE ref_difficulty:A SET technique_costs = [0];"
+allow = false
+error_contains = "technique_costs"

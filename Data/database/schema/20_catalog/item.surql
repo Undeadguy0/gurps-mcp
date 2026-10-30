@@ -38,6 +38,13 @@ DEFINE FIELD OVERWRITE attack_modes[*].reach ON item TYPE option<array<int>>;
 DEFINE FIELD OVERWRITE attack_modes[*].parry_raw ON item TYPE option<string>;
 DEFINE FIELD OVERWRITE attack_modes[*].parry ON item TYPE option<object> FLEXIBLE;
 DEFINE FIELD OVERWRITE attack_modes[*].notes ON item TYPE option<array<record<ref_weapon_note>>> ASSERT fn::refs_ok($value);
+-- Общие поля атаки (см. 00_common/attack.surql)
+DEFINE FIELD OVERWRITE attack_modes[*].defaults ON item TYPE option<array<object>> FLEXIBLE ASSERT $value = NONE OR $value.all(|$d| fn::attack_default_ok($d));
+DEFINE FIELD OVERWRITE attack_modes[*].skill_modifier ON item TYPE option<int>;
+DEFINE FIELD OVERWRITE attack_modes[*].skill_damage_bonus ON item TYPE option<object>;
+DEFINE FIELD OVERWRITE attack_modes[*].skill_damage_bonus.min_relative ON item TYPE int;
+DEFINE FIELD OVERWRITE attack_modes[*].skill_damage_bonus.per_die ON item TYPE int;
+DEFINE FIELD OVERWRITE attack_modes[*].technique ON item TYPE option<record<technique>> ASSERT fn::ref_ok($value);
 
 -- Броня: {dr_raw, locations[{loc, dr, dr_vs[{damage_type, dr}]}], flexible, ...}
 DEFINE FIELD OVERWRITE armor ON item TYPE option<object> FLEXIBLE;
@@ -65,7 +72,7 @@ DEFINE FIELD OVERWRITE features ON item TYPE array<object> FLEXIBLE DEFAULT [] A
 DEFINE FIELD OVERWRITE _refs ON item TYPE array<record> REFERENCE ON DELETE REJECT
 	VALUE array::distinct(array::flatten([
 		[pack, tl, lc],
-		array::flatten(attack_modes.map(|$m| array::flatten([[$m.skill, $m.damage.type], $m.damage.modifiers ?? [], $m.notes ?? []]))),
+		array::flatten(attack_modes.map(|$m| array::flatten([[$m.skill, $m.damage.type], $m.damage.modifiers ?? [], $m.notes ?? [], fn::attack_refs($m)]))),
 		array::flatten((armor.locations ?? []).map(|$l| array::flatten([[$l.loc], ($l.dr_vs ?? []).map(|$d| $d.damage_type)]))),
 		fn::feature_refs(features)
 	])).filter(|$v| $v != NONE);

@@ -129,7 +129,7 @@ pub fn norm(v: &J, drop: &[&str]) -> J {
                     continue;
                 }
                 let x = norm(&o[k], drop);
-                let empty = matches!(&x, J::Null)
+                let empty = matches!(&x, J::Null | J::Bool(false))
                     || x.as_str() == Some("")
                     || x.as_array().is_some_and(|a| a.is_empty())
                     || x.as_object().is_some_and(|a| a.is_empty());
@@ -199,4 +199,18 @@ pub fn char_opts(id: Option<&str>) -> sheet_bridge::character::import::CharOpts 
 pub fn read_toml(p: &Path) -> J {
     let t: toml::Value = toml::from_str(&std::fs::read_to_string(p).unwrap()).unwrap();
     serde_json::to_value(t).unwrap()
+}
+
+/// skill_bonus на навыки вне образца теряется при импорте (отчёт features.skill_bonus).
+pub fn drop_skill_bonus(v: &mut J) {
+    match v {
+        J::Object(o) => {
+            if let Some(fs) = o.get_mut("features").and_then(|f| f.as_array_mut()) {
+                fs.retain(|f| f["type"] != "skill_bonus");
+            }
+            o.values_mut().for_each(drop_skill_bonus);
+        }
+        J::Array(a) => a.iter_mut().for_each(drop_skill_bonus),
+        _ => {}
+    }
 }

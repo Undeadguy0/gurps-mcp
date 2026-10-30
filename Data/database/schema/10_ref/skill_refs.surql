@@ -13,7 +13,12 @@ DEFINE FIELD OVERWRITE kind ON ref_attribute TYPE string ASSERT $value IN ['basi
 -- Цена уровня в очках (заглушка), шаг уровня (Speed: 0.25)
 DEFINE FIELD OVERWRITE cost_per_level ON ref_attribute TYPE option<int>;
 DEFINE FIELD OVERWRITE step ON ref_attribute TYPE number DEFAULT 1;
-DEFINE FIELD OVERWRITE _refs ON ref_attribute TYPE array<record> REFERENCE ON DELETE REJECT VALUE [pack];
+-- База атрибута (расчёт — в коде): base_value (число) ИЛИ сумма base_from / base_divisor,
+-- результат округляется вниз до кратного step. Пример формы: HP от [ST], Speed от [DX, HT].
+DEFINE FIELD OVERWRITE base_value ON ref_attribute TYPE option<number>;
+DEFINE FIELD OVERWRITE base_from ON ref_attribute TYPE array<record<ref_attribute>> DEFAULT [] ASSERT fn::refs_ok($value);
+DEFINE FIELD OVERWRITE base_divisor ON ref_attribute TYPE option<number> ASSERT $value = NONE OR $value > 0;
+DEFINE FIELD OVERWRITE _refs ON ref_attribute TYPE array<record> REFERENCE ON DELETE REJECT VALUE array::distinct(array::flatten([[pack], base_from]));
 
 -- Сложность (E, A, H, VH, W).
 DEFINE TABLE OVERWRITE ref_difficulty SCHEMAFULL;
@@ -28,6 +33,8 @@ DEFINE FIELD OVERWRITE verified ON ref_difficulty TYPE bool DEFAULT false;
 DEFINE INDEX OVERWRITE ref_difficulty_code ON ref_difficulty FIELDS code UNIQUE;
 DEFINE FIELD OVERWRITE base_mod ON ref_difficulty TYPE option<int>;
 DEFINE FIELD OVERWRITE for_techniques ON ref_difficulty TYPE bool DEFAULT false;
+-- Цена уровней техники сверх дефолта: [1-й, 2-й, ...]; последний элемент повторяется.
+DEFINE FIELD OVERWRITE technique_costs ON ref_difficulty TYPE array<int> DEFAULT [] ASSERT $value.all(|$c| $c > 0);
 DEFINE FIELD OVERWRITE _refs ON ref_difficulty TYPE array<record> REFERENCE ON DELETE REJECT VALUE [pack];
 
 -- Категория навыка (melee, outdoor, ...).

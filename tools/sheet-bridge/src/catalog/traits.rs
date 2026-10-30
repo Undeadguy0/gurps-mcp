@@ -42,7 +42,7 @@ pub fn to_db(ctx: &mut Ctx, d: &TraitDef) -> anyhow::Result<Entity> {
     Ok(e)
 }
 
-pub fn from_db(j: &J, report: &mut Report) -> TraitDef {
+pub fn from_db(j: &J, report: &mut Report, colleges: &std::collections::BTreeMap<String, String>) -> TraitDef {
     let id = super::kebab_sid(j);
     let what = format!("trait {id}");
     let category = match jsonx::s(j, "kind") {
@@ -73,7 +73,7 @@ pub fn from_db(j: &J, report: &mut Report) -> TraitDef {
         max_levels: jsonx::i(&cost, "max_level").map(|x| x as u32),
         min_levels: None,
         page: super::page_of(j),
-        features: features::from_db(j, report, &what),
+        features: features::from_db(j, report, colleges, &what),
         description: super::desc_of(j),
         id,
     }

@@ -101,3 +101,49 @@ kind = "sql_expect"
 actor = "root"
 sql = "IF count(SELECT * FROM attack_mode WHERE natural = true) < 3 { THROW 'natural' };"
 allow = true
+
+[[cases]]
+name = "new_kinds_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_nk1'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'defense_bonus', amount: 1, defenses: ['dodge', 'parry'] }, { kind: 'lifting_st_bonus', amount: 1, per_level: true }, { kind: 'striking_st_bonus', amount: 2 }, { kind: 'spell_bonus', amount: 1, college: ref_college:college_a }, { kind: 'spell_bonus', amount: 1, spell: spell:['basic', 'spell_a'] }, { kind: 'spell_bonus', amount: 1 }] RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "defense_bonus_bad_defense_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_nk2'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'defense_bonus', amount: 1, defenses: ['luck'] }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "spell_bonus_college_and_spell_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_nk3'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'spell_bonus', amount: 1, college: ref_college:college_a, spell: spell:['basic', 'spell_a'] }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "spell_bonus_missing_college_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_nk4'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'spell_bonus', amount: 1, college: ref_college:ghost }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "striking_st_set_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE trait:['basic', 't_nk5'] SET kind = 'adv', cost = { type: 'fixed' }, features = [{ kind: 'striking_st_bonus', op: 'set', amount: 1 }];"
+allow = false
+error_contains = "features"
+
+[[cases]]
+name = "spell_bonus_college_delete_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_college:college_a;"
+allow = false

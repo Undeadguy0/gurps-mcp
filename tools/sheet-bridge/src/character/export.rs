@@ -95,6 +95,8 @@ pub async fn build(db: &Db, id: &str, report: &mut Report) -> anyhow::Result<Cha
     }
     ex.report.gap(Dir::Export, "character.tl/created_at: в листе нет", id);
     ch.rules.disadvantage_limit = jsonx::i(&c, "disadv_limit").map(|x| x as i32);
+    ch.session.hp = jsonx::i(&c, "current_hp").map(|x| x as i32);
+    ch.session.fp = jsonx::i(&c, "current_fp").map(|x| x as i32);
     // атрибуты
     let mut vals: BTreeMap<String, i32> = BTreeMap::new();
     for a in jsonx::arr(&c, "attributes") {
@@ -128,7 +130,7 @@ pub async fn build(db: &Db, id: &str, report: &mut Report) -> anyhow::Result<Cha
     for e in ex.edges("has_trait", &cref).await? {
         let rec = out_rec(&e)?;
         let j = ex.row(&rec).await?;
-        let mut def = traits::from_db(&j, ex.report);
+        let mut def = traits::from_db(&j, ex.report, &ex.colleges);
         if ex.lib(&rec) {
             def.description = None;
         }
@@ -179,7 +181,7 @@ pub async fn build(db: &Db, id: &str, report: &mut Report) -> anyhow::Result<Cha
             points: jsonx::i(&e, "points").unwrap_or(0) as i32,
             specialization,
             source: ex.source(&rec),
-            explanation: None,
+            explanation: jsonx::s(&e, "note").map(str::to_string),
             def,
         });
     }
@@ -194,7 +196,7 @@ pub async fn build(db: &Db, id: &str, report: &mut Report) -> anyhow::Result<Cha
             def,
             points: jsonx::i(&e, "points").unwrap_or(0) as i32,
             source: ex.source(&rec),
-            explanation: None,
+            explanation: jsonx::s(&e, "note").map(str::to_string),
         });
     }
     for e in ex.edges("has_spell", &cref).await? {
@@ -208,7 +210,7 @@ pub async fn build(db: &Db, id: &str, report: &mut Report) -> anyhow::Result<Cha
             def,
             points: jsonx::i(&e, "points").unwrap_or(0) as i32,
             source: ex.source(&rec),
-            explanation: None,
+            explanation: jsonx::s(&e, "note").map(str::to_string),
         });
     }
     // снаряжение: дерево по contained_in
@@ -230,7 +232,7 @@ pub async fn build(db: &Db, id: &str, report: &mut Report) -> anyhow::Result<Cha
             carried: jsonx::b(e, "equipped").unwrap_or(false),
             contents: vec![],
             source: ex.source(&rec),
-            explanation: None,
+            explanation: jsonx::s(e, "note").map(str::to_string),
         };
         nodes.push((
             jsonx::s(e, "id").unwrap_or("").to_string(),
@@ -250,7 +252,7 @@ pub async fn build(db: &Db, id: &str, report: &mut Report) -> anyhow::Result<Cha
     let fresh = |ex: &Ex, j: &J, t: &str| jsonx::s(j, "sid").is_some_and(|s| ex.resolver.find(t, s, "").is_none());
     for j in get("trait") {
         if fresh(&ex, &j, "trait") {
-            custom.traits.push(traits::from_db(&j, ex.report));
+            custom.traits.push(traits::from_db(&j, ex.report, &ex.colleges));
         }
     }
     for j in get("skill") {

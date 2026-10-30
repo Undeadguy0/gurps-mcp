@@ -94,7 +94,7 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
             None,
             d,
             traits::to_db,
-            |j, r, _| j_(traits::from_db(j, r)),
+            |j, r, c| j_(traits::from_db(j, r, c)),
             &format!("custom trait {}", d.id),
         )
         .await?;
@@ -139,7 +139,7 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
                 t.source.as_deref(),
                 &t.def,
                 traits::to_db,
-                |j, r, _| j_(traits::from_db(j, r)),
+                |j, r, c| j_(traits::from_db(j, r, c)),
                 &what,
             )
             .await?;
@@ -202,8 +202,7 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
                 );
             }
         }
-        explanation(m.report, &s.explanation, &what);
-        relate(&mut edges, "has_skill", id, i, &cref, &rec, c);
+        relate(&mut edges, "has_skill", id, i, &cref, &rec, with_note(c, &s.explanation));
     }
     for (i, t) in ch.techniques.iter().enumerate() {
         let sid = ids::kebab_to_sid(&t.def.id)?;
@@ -219,7 +218,6 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
                 &what,
             )
             .await?;
-        explanation(m.report, &t.explanation, &what);
         relate(
             &mut edges,
             "has_technique",
@@ -227,7 +225,7 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
             i,
             &cref,
             &rec,
-            Sv::obj().with("points", Sv::Int(t.points as i64)),
+            with_note(Sv::obj().with("points", Sv::Int(t.points as i64)), &t.explanation),
         );
     }
     for (i, s) in ch.spells.iter().enumerate() {
@@ -244,7 +242,6 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
                 &what,
             )
             .await?;
-        explanation(m.report, &s.explanation, &what);
         relate(
             &mut edges,
             "has_spell",
@@ -252,7 +249,7 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
             i,
             &cref,
             &rec,
-            Sv::obj().with("points", Sv::Int(s.points as i64)),
+            with_note(Sv::obj().with("points", Sv::Int(s.points as i64)), &s.explanation),
         );
     }
     // снаряжение (дерево)
@@ -280,8 +277,7 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
                 &what,
             )
             .await?;
-        explanation(m.report, &e.explanation, &what);
-        let mut c = Sv::obj()
+        let mut c = with_note(Sv::obj(), &e.explanation)
             .with("qty", Sv::Int(e.quantity.max(1) as i64))
             .with("equipped", Sv::Bool(e.carried));
         if e.quantity == 0 {
@@ -338,10 +334,11 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
         })
         .collect();
     if ch.rules.negative_rounding != NegativeRounding::default() {
-        report.gap(Dir::Import, "rules.negative_rounding: в схеме нет", id);
-    }
-    if ch.session.hp.is_some() || ch.session.fp.is_some() {
-        report.gap(Dir::Import, "session.hp/fp (текущие HP/FP): в схеме нет", id);
+        report.gap(
+            Dir::Import,
+            "rules.negative_rounding: опция стола, а не факт персонажа; в схеме нет, расчёт по правилу Basic Set",
+            id,
+        );
     }
     report.gap(Dir::Import, "character.tl: в листе нет, взято --tl", format!("{id}: {}", opts.tl));
     let mut cc = Sv::obj()
@@ -352,6 +349,8 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
         ("player", Sv::opt(Some(ch.player.clone()).filter(|p| !p.is_empty()), Sv::Str)),
         ("notes", Sv::opt(Some(ch.notes.clone()).filter(|p| !p.is_empty()), Sv::Str)),
         ("disadv_limit", Sv::opt(ch.rules.disadvantage_limit, |x| Sv::Int(x as i64))),
+        ("current_hp", Sv::opt(ch.session.hp, |x| Sv::Int(x as i64))),
+        ("current_fp", Sv::opt(ch.session.fp, |x| Sv::Int(x as i64))),
     ] {
         if let Sv::Obj(o) = &mut cc {
             o.insert(k.into(), sv_pair(k, v));
@@ -445,9 +444,10 @@ fn relate(sql: &mut String, table: &str, id: &str, i: usize, cref: &Rec, out: &R
     let _ = writeln!(sql, "INSERT RELATION INTO {table} {};", full.to_sql());
 }
 
-fn explanation(report: &mut Report, e: &Option<String>, what: &str) {
-    if e.as_deref().is_some_and(|x| !x.trim().is_empty()) {
-        report.gap(Dir::Import, "explanation (кроме черт): в схеме нет", what);
+fn with_note(c: Sv, e: &Option<String>) -> Sv {
+    match e.as_deref().filter(|x| !x.trim().is_empty()) {
+        Some(x) => c.with("note", Sv::str(x)),
+        None => c,
     }
 }
 

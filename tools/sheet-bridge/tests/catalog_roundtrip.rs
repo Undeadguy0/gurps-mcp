@@ -2,17 +2,13 @@
 mod common;
 use common::*;
 use sheet_bridge::catalog::{export, import};
-use sheet_bridge::report::Dir;
 
 /// Поля, которые схема заведомо не хранит (см. отчёт и README).
 const LOSSY: &[&str] = &[
-    "features",
+    // skill->skill умолчания на цель, импортируемую позже в том же файле, теряются (отчёт skill.defaults)
+    "defaults",
     "prerequisites",
     "min_levels",
-    "defaults",
-    "skill_damage_bonus",
-    "skill_modifier",
-    "technique",
     "version",
 ];
 
@@ -24,7 +20,7 @@ async fn catalog_roundtrip_sample() {
     };
     let (_s, db) = start().await;
     let r = import::run(&db, &[sd.join("plugins")], &catalog_opts(), false).await.unwrap();
-    assert!(r.has(Dir::Import, "features.spell_bonus: нет аналога в схеме, отброшено"), "{r}");
+    assert!(!r.to_string().contains("нет аналога в схеме"), "{r}");
     let out = tmp("cat1");
     export::run(&db, &["basic_set_sample".into()], &out).await.unwrap();
     let src = sd.join("plugins/basic-set-sample/data");
@@ -48,8 +44,11 @@ async fn catalog_roundtrip_sample() {
                 }
             }
         }
+        let mut exp = read_toml(&out.join("basic-set-sample/data").join(&name));
+        drop_skill_bonus(&mut raw);
+        drop_skill_bonus(&mut exp);
         let a = norm(&raw, LOSSY);
-        let b = norm(&read_toml(&out.join("basic-set-sample/data").join(&name)), LOSSY);
+        let b = norm(&exp, LOSSY);
         // поля, добавленные экспортом по умолчанию, допустимы: сравниваем исходные ключи
         if let Some(d) = diff_sub(&a, &b, &format!("{name:?}")) {
             panic!("расхождение: {d}");

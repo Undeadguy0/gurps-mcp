@@ -31,6 +31,13 @@ DEFINE FIELD OVERWRITE reach ON attack_mode TYPE option<array<int>>;
 DEFINE FIELD OVERWRITE parry_raw ON attack_mode TYPE option<string>;
 DEFINE FIELD OVERWRITE parry ON attack_mode TYPE option<object> FLEXIBLE;
 DEFINE FIELD OVERWRITE notes ON attack_mode TYPE option<array<record<ref_weapon_note>>> ASSERT fn::refs_ok($value);
+-- Общие поля атаки (см. 00_common/attack.surql)
+DEFINE FIELD OVERWRITE defaults ON attack_mode TYPE array<object> FLEXIBLE DEFAULT [] ASSERT $value.all(|$d| fn::attack_default_ok($d));
+DEFINE FIELD OVERWRITE skill_modifier ON attack_mode TYPE option<int>;
+DEFINE FIELD OVERWRITE skill_damage_bonus ON attack_mode TYPE option<object>;
+DEFINE FIELD OVERWRITE skill_damage_bonus.min_relative ON attack_mode TYPE int;
+DEFINE FIELD OVERWRITE skill_damage_bonus.per_die ON attack_mode TYPE int;
+DEFINE FIELD OVERWRITE technique ON attack_mode TYPE option<record<technique>> ASSERT fn::ref_ok($value);
 
 DEFINE FIELD OVERWRITE _refs ON attack_mode TYPE array<record> REFERENCE ON DELETE REJECT
-	VALUE array::distinct(array::flatten([[pack, skill, damage.type], damage.modifiers ?? [], notes ?? []])).filter(|$v| $v != NONE);
+	VALUE array::distinct(array::flatten([[pack, skill, damage.type], damage.modifiers ?? [], notes ?? [], fn::attack_refs($this)])).filter(|$v| $v != NONE);

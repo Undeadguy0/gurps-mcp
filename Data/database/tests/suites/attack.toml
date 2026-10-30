@@ -1,0 +1,64 @@
+# Общие поля атаки: defaults, skill_modifier, skill_damage_bonus, technique.
+name = "attack"
+tags = ["attack"]
+
+[[cases]]
+name = "attack_mode_fields_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE attack_mode:['basic', 't_am1'] SET natural = true, skill_modifier = -2, defaults = [{ attribute: ref_attribute:DX, mod: 0 }, { skill: skill:['basic', 'sword_a'], mod: -3 }], skill_damage_bonus = { min_relative: 2, per_die: 1 }, technique = technique:['basic', 'strike_a'] RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "default_two_targets_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE attack_mode:['basic', 't_am2'] SET defaults = [{ attribute: ref_attribute:DX, skill: skill:['basic', 'sword_a'], mod: 0 }];"
+allow = false
+error_contains = "defaults"
+
+[[cases]]
+name = "default_no_target_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE attack_mode:['basic', 't_am3'] SET defaults = [{ mod: 0 }];"
+allow = false
+error_contains = "defaults"
+
+[[cases]]
+name = "default_missing_skill_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE attack_mode:['basic', 't_am4'] SET defaults = [{ skill: skill:['basic', 'ghost'], mod: 0 }];"
+allow = false
+error_contains = "defaults"
+
+[[cases]]
+name = "technique_missing_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE attack_mode:['basic', 't_am5'] SET technique = technique:['basic', 'ghost'];"
+allow = false
+error_contains = "technique"
+
+[[cases]]
+name = "item_attack_fields_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:['basic', 't_it1'] SET category = 'melee', attack_modes = [{ name: 'x', skill_modifier: -1, defaults: [{ attribute: ref_attribute:ST, mod: -1 }], skill_damage_bonus: { min_relative: 0, per_die: 1 }, technique: technique:['basic', 'strike_a'] }] RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "item_attack_bad_default_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE item:['basic', 't_it2'] SET category = 'melee', attack_modes = [{ name: 'x', defaults: [{ attribute: ref_attribute:LUCK, mod: 0 }] }];"
+allow = false
+error_contains = "defaults"
+
+[[cases]]
+name = "technique_in_use_delete_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE technique:['basic', 'strike_a'];"
+allow = false

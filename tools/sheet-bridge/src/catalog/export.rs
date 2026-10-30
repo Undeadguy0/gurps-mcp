@@ -89,7 +89,7 @@ pub fn to_sheet(rows: &PackRows, report: &mut Report, colleges: &BTreeMap<String
         d.techniques.push(x);
     }
     for j in get("trait") {
-        let x = traits::from_db(j, report);
+        let x = traits::from_db(j, report, colleges);
         add_loc(&mut loc, format!("trait-{}", x.id), j);
         d.traits.push(x);
     }

@@ -95,3 +95,33 @@ actor = "root"
 sql = "CREATE pack:x2 SET name = 'x', abbrev = 'X2', kind = 'official', owner = character:test_hero;"
 allow = false
 error_contains = "owner"
+
+[[cases]]
+name = "current_hp_fp_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "UPDATE character:test_hero SET current_hp = -3, current_fp = 0 RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "current_hp_float_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "UPDATE character:test_hero SET current_hp = 1.5;"
+allow = false
+error_contains = "current_hp"
+
+[[cases]]
+name = "edge_notes_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "RELATE character:test_hero->has_spell->spell:['basic', 'spell_b'] SET points = 1, note = 'x'; RELATE character:test_hero->has_technique->technique:['basic', 'strike_a'] SET points = 0, note = 'y'; RELATE character:test_hero->owns_item->item:['basic', 'armor_a'] SET note = 'z'; IF (SELECT VALUE note FROM has_skill WHERE in = character:test_hero AND out = skill:['basic', 'sword_a'])[0] != 'тестовое пояснение' { THROW 'note' };"
+allow = true
+
+[[cases]]
+name = "attribute_levels_int_only"
+kind = "sql_expect"
+actor = "root"
+sql = "UPDATE character:test_hero SET attributes = [{ attribute: ref_attribute:Speed, levels: 0.25 }];"
+allow = false
+error_contains = "levels"

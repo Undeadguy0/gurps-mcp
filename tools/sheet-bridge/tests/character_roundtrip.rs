@@ -9,16 +9,13 @@ use std::path::{Path, PathBuf};
 
 /// Поля, которые схема не хранит или которые экспорт выводит иначе (отчёт + README).
 const LOSSY: &[&str] = &[
-    "features",
+    // skill->skill умолчания на цель, импортируемую позже в том же файле, теряются (отчёт skill.defaults)
+    "defaults",
     "prerequisites",
     "min_levels",
     "weapons",
     "description",
     "source",
-    "defaults",
-    "skill_damage_bonus",
-    "skill_modifier",
-    "technique",
 ];
 
 fn goldens(sd: &Path) -> Vec<PathBuf> {
@@ -79,11 +76,15 @@ async fn golden_characters_roundtrip() {
     assert!(files.len() >= 4);
     for f in &files {
         let orig: J = fill(serde_json::from_str(&std::fs::read_to_string(f).unwrap()).unwrap());
+        let mut orig = orig;
+        drop_skill_bonus(&mut orig);
         let a = cycle(&db, f, &out1).await;
+        let mut a2 = a.clone();
+        drop_skill_bonus(&mut a2);
         // страница "example" и пр. нераспознаваемые — отбрасываются
         let mut o = norm(&orig, LOSSY);
         strip_bad_pages(&mut o);
-        let na = norm(&a, LOSSY);
+        let na = norm(&a2, LOSSY);
         if let Some(d) = diff(&o, &na, &f.display().to_string()) {
             panic!("цикл 1: {d}");
         }

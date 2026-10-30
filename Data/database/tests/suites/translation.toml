@@ -69,3 +69,24 @@ kind = "sql_expect"
 actor = "root"
 sql = "CREATE skill:['basic', 't_tr'] SET attribute = ref_attribute:DX, difficulty = ref_difficulty:A; CREATE translation SET record = skill:['basic', 't_tr'], lang = 'ru', field = 'name', text = 'x'; DELETE skill:['basic', 't_tr']; IF count(SELECT * FROM translation WHERE record = skill:['basic', 't_tr']) > 0 { THROW 'cascade' };"
 allow = true
+
+[[cases]]
+name = "ft_ru_inflected"
+kind = "sql_expect"
+actor = "root"
+sql = "IF count(SELECT * FROM translation WHERE text_ru @1@ 'специализации') = 0 { THROW 'ru' };"
+allow = true
+
+[[cases]]
+name = "ft_en_stemmed"
+kind = "sql_expect"
+actor = "root"
+sql = "IF count(SELECT * FROM translation WHERE text_en @1@ 'specialization') = 0 { THROW 'en' };"
+allow = true
+
+[[cases]]
+name = "ft_lang_isolated"
+kind = "sql_expect"
+actor = "root"
+sql = "IF count(SELECT * FROM translation WHERE text_ru @1@ 'requires') > 0 { THROW 'leak' };"
+allow = true

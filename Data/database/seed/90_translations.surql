@@ -18,3 +18,4 @@ CREATE translation SET record = skill:['basic', 'sword_a'], lang = 'ru', field =
 CREATE translation SET record = skill:['basic', 'outdoor_a'], lang = 'ru', field = 'spec.spec_a', text = 'ЗАГЛУШКА специализация A';
 CREATE translation SET record = skill:['basic', 'outdoor_a'], lang = 'ru', field = 'spec.spec_b', text = 'ЗАГЛУШКА специализация B';
 CREATE translation SET record = trait:['custom_test_hero', 'oath_a'], lang = 'ru', field = 'name', text = 'Личная клятва (тест)';
+CREATE translation SET record = skill:['basic', 'outdoor_a'], lang = 'en', field = 'description', text = 'PLACEHOLDER: requires specializations';
