@@ -97,8 +97,17 @@ pub async fn start() -> (Server, Db) {
     let base = repo().join("Data/database");
     let mut files = Vec::new();
     sql_files(&base.join("schema"), &mut files);
-    files.push(base.join("seed/00_packs.surql"));
-    files.push(base.join("seed/05_refs.surql"));
+    // справочные сиды (00..09: паки, книги, условия ранений, refs, планы тела) — по порядку имён
+    let mut seeds: Vec<PathBuf> = std::fs::read_dir(base.join("seed"))
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| {
+            let n = p.file_name().unwrap().to_string_lossy();
+            n.ends_with(".surql") && n.as_bytes()[0] == b'0'
+        })
+        .collect();
+    seeds.sort();
+    files.extend(seeds);
     files.push(Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/colleges.surql"));
     for f in files {
         let body = std::fs::read_to_string(&f).unwrap();

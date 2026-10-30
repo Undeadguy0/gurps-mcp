@@ -1,0 +1,85 @@
+# Книги-источники, самоконтроль N/A, вид значения модификатора урона, правила урона от ST.
+name = "refs_typed"
+tags = ["refs"]
+
+[[cases]]
+name = "book_string_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_rule:t_bk1 SET code = 't_bk1', value = 1, pack = pack:basic, source_refs = [{ book: 'B', page: 1 }];"
+allow = false
+error_contains = "record"
+
+[[cases]]
+name = "book_unknown_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_rule:t_bk2 SET code = 't_bk2', value = 1, pack = pack:basic, source_refs = [{ book: ref_book:XX, page: 1 }];"
+allow = false
+error_contains = "book"
+
+[[cases]]
+name = "book_record_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE skill:['basic', 't_bk'] SET attribute = ref_attribute:DX, difficulty = ref_difficulty:E, source_refs = [{ book: ref_book:B, page: 208 }] RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "delete_used_book_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_book:M;"
+allow = false
+
+[[cases]]
+name = "no_string_books_left"
+kind = "sql_expect"
+actor = "root"
+sql = "FOR $t IN ['ref_attribute', 'ref_st_damage', 'ref_rule', 'ref_hit_location', 'ref_college', 'ref_skill_category', 'skill'] { IF count(SELECT id FROM type::table($t) WHERE source_refs.any(|$s| !type::is_record($s.book))) > 0 { THROW $t; }; };"
+allow = true
+
+[[cases]]
+name = "self_control_always_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_self_control:t_na SET code = 't_na', kind = 'always', cost_mult = 1.0, pack = pack:basic RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "self_control_always_with_roll_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_self_control:t_na2 SET code = 't_na2', kind = 'always', roll = 12, cost_mult = 1.0, pack = pack:basic;"
+allow = false
+error_contains = "roll"
+
+[[cases]]
+name = "self_control_roll_missing_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_self_control:t_na3 SET code = 't_na3', kind = 'roll', cost_mult = 1.0, pack = pack:basic;"
+allow = false
+error_contains = "roll"
+
+[[cases]]
+name = "damage_modifier_bad_value_kind_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_damage_modifier:t_dm SET code = 't_dm', value_kind = 'fraction', pack = pack:basic;"
+allow = false
+error_contains = "value_kind"
+
+[[cases]]
+name = "frag_value_kind_dice"
+kind = "sql_expect"
+actor = "root"
+sql = "IF ref_damage_modifier:frag.value_kind != 'dice' { THROW 'frag'; };"
+allow = true
+
+[[cases]]
+name = "st_damage_rules_present"
+kind = "sql_expect"
+actor = "root"
+sql = "IF ref_rule:st_damage_lookup.text != 'floor' OR ref_rule:st_damage_extra_st.value = NONE OR ref_rule:st_damage_extra_dice.value = NONE { THROW 'st rules'; };"
+allow = true

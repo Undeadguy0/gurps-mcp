@@ -12,6 +12,8 @@ DEFINE FIELD OVERWRITE attributes ON character TYPE array<object> DEFAULT []
 	ASSERT array::len(array::distinct($value.map(|$a| $a.attribute))) = array::len($value);
 DEFINE FIELD OVERWRITE attributes[*].attribute ON character TYPE record<ref_attribute> ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE attributes[*].levels ON character TYPE int;
+-- План тела (зоны попадания); NONE — план ref_body_plan с is_default = true (гуманоид).
+DEFINE FIELD OVERWRITE body_plan ON character TYPE option<record<ref_body_plan>> ASSERT fn::ref_ok($value);
 DEFINE FIELD OVERWRITE disadv_limit ON character TYPE option<int>;
 DEFINE FIELD OVERWRITE quirk_limit ON character TYPE option<int>;
 DEFINE FIELD OVERWRITE notes ON character TYPE option<string>;
@@ -20,4 +22,4 @@ DEFINE FIELD OVERWRITE current_hp ON character TYPE option<int>;
 DEFINE FIELD OVERWRITE current_fp ON character TYPE option<int>;
 DEFINE FIELD OVERWRITE created_at ON character TYPE datetime DEFAULT time::now() READONLY;
 DEFINE FIELD OVERWRITE _refs ON character TYPE array<record> REFERENCE ON DELETE REJECT
-	VALUE array::distinct(array::flatten([[tl, mana_level], attributes.map(|$a| $a.attribute)])).filter(|$v| $v != NONE);
+	VALUE array::distinct(array::flatten([[tl, mana_level, body_plan], attributes.map(|$a| $a.attribute)])).filter(|$v| $v != NONE);

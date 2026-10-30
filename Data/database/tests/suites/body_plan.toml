@@ -1,0 +1,100 @@
+# Планы тела, зоны попадания (несколько диапазонов бросков, доп. DR, условия множителей ран).
+name = "body_plan"
+tags = ["refs", "body_plan"]
+
+[[cases]]
+name = "humanoid_is_default"
+kind = "sql_expect"
+actor = "root"
+sql = "IF (SELECT VALUE id FROM ref_body_plan WHERE is_default = true) != [ref_body_plan:humanoid] { THROW 'default plan'; };"
+allow = true
+
+[[cases]]
+name = "humanoid_rolls_cover_3_18"
+kind = "sql_expect"
+actor = "root"
+sql = "LET $r = array::flatten((SELECT VALUE rolls FROM ref_body_plan_location WHERE plan = ref_body_plan:humanoid)); IF math::sum($r.map(|$x| $x[1] - $x[0] + 1)) != 16 { THROW 'coverage'; };"
+allow = true
+
+[[cases]]
+name = "arm_has_two_ranges"
+kind = "sql_expect"
+actor = "root"
+sql = "IF ref_body_plan_location:['humanoid', 'arm'].rolls != [[8, 8], [12, 12]] { THROW 'arm'; };"
+allow = true
+
+[[cases]]
+name = "overlapping_roll_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_body_plan:t_plan SET code = 't_plan', pack = pack:basic; CREATE ref_body_plan_location:['t_plan', 'torso'] SET plan = ref_body_plan:t_plan, location = ref_hit_location:torso, rolls = [[9, 10]], pack = pack:basic; CREATE ref_body_plan_location:['t_plan', 'groin'] SET plan = ref_body_plan:t_plan, location = ref_hit_location:groin, rolls = [[10, 11]], pack = pack:basic;"
+allow = false
+error_contains = "пересекаются"
+
+[[cases]]
+name = "roll_out_of_range_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_body_plan:t_plan2 SET code = 't_plan2', pack = pack:basic; CREATE ref_body_plan_location:['t_plan2', 'torso'] SET plan = ref_body_plan:t_plan2, location = ref_hit_location:torso, rolls = [[2, 19]], pack = pack:basic;"
+allow = false
+error_contains = "rolls"
+
+[[cases]]
+name = "id_mismatch_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_body_plan_location:['humanoid', 'x_torso'] SET plan = ref_body_plan:humanoid, location = ref_hit_location:torso, pack = pack:basic;"
+allow = false
+error_contains = "location"
+
+[[cases]]
+name = "second_default_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_body_plan:t_def SET code = 't_def', is_default = true, pack = pack:basic;"
+allow = false
+error_contains = "is_default"
+
+[[cases]]
+name = "delete_used_location_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_hit_location:arm;"
+allow = false
+
+[[cases]]
+name = "character_body_plan_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE character:t_bp SET name = 'x', tl = ref_tl:TL3, body_plan = ref_body_plan:quadruped RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "character_bad_body_plan_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE character:t_bp2 SET name = 'x', tl = ref_tl:TL3, body_plan = ref_body_plan:blob;"
+allow = false
+error_contains = "body_plan"
+
+[[cases]]
+name = "skull_extra_dr"
+kind = "sql_expect"
+actor = "root"
+sql = "IF ref_hit_location:skull.extra_dr != 2 { THROW 'skull'; };"
+allow = true
+
+[[cases]]
+name = "wound_condition_must_exist"
+kind = "sql_expect"
+actor = "root"
+sql = "UPDATE ref_hit_location:torso SET wound_mults = [{ damage_type: ref_damage_type:burn, mult: 2.0, condition: ref_wound_condition:nope }];"
+allow = false
+error_contains = "condition"
+
+[[cases]]
+name = "delete_used_wound_condition_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "DELETE ref_wound_condition:narrow_beam;"
+allow = false

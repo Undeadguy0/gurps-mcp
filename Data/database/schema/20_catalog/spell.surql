@@ -6,7 +6,7 @@ DEFINE FIELD OVERWRITE id ON spell TYPE array<string, 2> ASSERT fn::id_ok($value
 DEFINE FIELD OVERWRITE sid ON spell TYPE string VALUE record::id($this.id)[1] READONLY;
 DEFINE FIELD OVERWRITE pack ON spell TYPE record<pack> VALUE type::record('pack', record::id($this.id)[0]) ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs ON spell TYPE array<object> DEFAULT [];
-DEFINE FIELD OVERWRITE source_refs[*].book ON spell TYPE string;
+DEFINE FIELD OVERWRITE source_refs[*].book ON spell TYPE record<ref_book> ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs[*].page ON spell TYPE option<int>;
 DEFINE FIELD OVERWRITE tags ON spell TYPE array<string> DEFAULT [];
 DEFINE FIELD OVERWRITE rank ON spell TYPE int DEFAULT 0;
@@ -43,4 +43,4 @@ DEFINE FIELD OVERWRITE maintain.cost ON spell TYPE option<int>;
 DEFINE FIELD OVERWRITE prereqs ON spell TYPE option<object> FLEXIBLE ASSERT $value = NONE OR fn::prereq_ok($value);
 
 DEFINE FIELD OVERWRITE _refs ON spell TYPE array<record> REFERENCE ON DELETE REJECT
-	VALUE array::distinct(array::flatten([[pack, difficulty], colleges, classes, [resist].filter(|$v| $v != NONE), fn::prereq_refs(prereqs)]));
+	VALUE array::distinct(array::flatten([source_refs.map(|$s| $s.book), [pack, difficulty], colleges, classes, [resist].filter(|$v| $v != NONE), fn::prereq_refs(prereqs)]));

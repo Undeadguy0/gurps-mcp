@@ -6,7 +6,7 @@ DEFINE FIELD OVERWRITE id ON item TYPE array<string, 2> ASSERT fn::id_ok($value)
 DEFINE FIELD OVERWRITE sid ON item TYPE string VALUE record::id($this.id)[1] READONLY;
 DEFINE FIELD OVERWRITE pack ON item TYPE record<pack> VALUE type::record('pack', record::id($this.id)[0]) ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs ON item TYPE array<object> DEFAULT [];
-DEFINE FIELD OVERWRITE source_refs[*].book ON item TYPE string;
+DEFINE FIELD OVERWRITE source_refs[*].book ON item TYPE record<ref_book> ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs[*].page ON item TYPE option<int>;
 DEFINE FIELD OVERWRITE tags ON item TYPE array<string> DEFAULT [];
 DEFINE FIELD OVERWRITE rank ON item TYPE int DEFAULT 0;
@@ -70,7 +70,7 @@ DEFINE FIELD OVERWRITE container.capacity_raw ON item TYPE option<string>;
 DEFINE FIELD OVERWRITE features ON item TYPE array<object> FLEXIBLE DEFAULT [] ASSERT $value.all(|$f| fn::feature_ok($f));
 
 DEFINE FIELD OVERWRITE _refs ON item TYPE array<record> REFERENCE ON DELETE REJECT
-	VALUE array::distinct(array::flatten([
+	VALUE array::distinct(array::flatten([source_refs.map(|$s| $s.book), 
 		[pack, tl, lc],
 		array::flatten(attack_modes.map(|$m| array::flatten([[$m.skill, $m.damage.type], $m.damage.modifiers ?? [], $m.notes ?? [], fn::attack_refs($m)]))),
 		array::flatten((armor.locations ?? []).map(|$l| array::flatten([[$l.loc], ($l.dr_vs ?? []).map(|$d| $d.damage_type)]))),

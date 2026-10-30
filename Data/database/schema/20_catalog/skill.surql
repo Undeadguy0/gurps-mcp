@@ -6,7 +6,7 @@ DEFINE FIELD OVERWRITE id ON skill TYPE array<string, 2> ASSERT fn::id_ok($value
 DEFINE FIELD OVERWRITE sid ON skill TYPE string VALUE record::id($this.id)[1] READONLY;
 DEFINE FIELD OVERWRITE pack ON skill TYPE record<pack> VALUE type::record('pack', record::id($this.id)[0]) ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs ON skill TYPE array<object> DEFAULT [];
-DEFINE FIELD OVERWRITE source_refs[*].book ON skill TYPE string;
+DEFINE FIELD OVERWRITE source_refs[*].book ON skill TYPE record<ref_book> ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs[*].page ON skill TYPE option<int>;
 DEFINE FIELD OVERWRITE tags ON skill TYPE array<string> DEFAULT [];
 DEFINE FIELD OVERWRITE rank ON skill TYPE int DEFAULT 0;
@@ -29,4 +29,4 @@ DEFINE FIELD OVERWRITE prereqs ON skill TYPE option<object> FLEXIBLE ASSERT $val
 DEFINE FIELD OVERWRITE features ON skill TYPE array<object> FLEXIBLE DEFAULT [] ASSERT $value.all(|$f| fn::feature_ok($f));
 
 DEFINE FIELD OVERWRITE _refs ON skill TYPE array<record> REFERENCE ON DELETE REJECT
-	VALUE array::distinct(array::flatten([[pack, attribute, difficulty], categories, fn::prereq_refs(prereqs), fn::feature_refs(features)]));
+	VALUE array::distinct(array::flatten([source_refs.map(|$s| $s.book), [pack, attribute, difficulty], categories, fn::prereq_refs(prereqs), fn::feature_refs(features)]));

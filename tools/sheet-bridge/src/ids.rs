@@ -1,6 +1,6 @@
 //! Идентификаторы: kebab-case id листа <-> sid БД (`^[a-z0-9_]+$`), ссылки на книги.
 
-use crate::sql::Sv;
+use crate::sql::{Rec, Sv};
 
 /// `combat-reflexes` -> `combat_reflexes`. Ошибка, если id не обратим однозначно.
 pub fn kebab_to_sid(id: &str) -> anyhow::Result<String> {
@@ -35,7 +35,7 @@ pub fn slug(s: &str) -> String {
     out
 }
 
-/// `B208` -> `{book: 'B', page: 208}`; иное (`example`) не представимо.
+/// `B208` -> `{book: ref_book:B, page: 208}`; иное (`example`) не представимо.
 pub fn parse_page(page: &str) -> Option<(String, i64)> {
     let p = page.trim();
     let split = p.find(|c: char| c.is_ascii_digit())?;
@@ -49,13 +49,20 @@ pub fn parse_page(page: &str) -> Option<(String, i64)> {
 
 pub fn source_refs(page: Option<&str>) -> Option<Sv> {
     let (book, n) = parse_page(page?)?;
-    Some(Sv::Arr(vec![Sv::obj().with("book", Sv::Str(book)).with("page", Sv::Int(n))]))
+    Some(Sv::Arr(vec![Sv::obj()
+        .with("book", Sv::Rec(Rec::code("ref_book", &book)))
+        .with("page", Sv::Int(n))]))
 }
 
 /// Обратно: первая ссылка `source_refs` -> `B208`.
 pub fn page_from_json(v: &serde_json::Value) -> Option<String> {
     let r = v.get("source_refs")?.as_array()?.first()?;
-    let book = r.get("book")?.as_str()?;
+    let raw = r.get("book")?.as_str()?;
+    let rec = Rec::parse(raw)?;
+    if rec.table != "ref_book" {
+        return None;
+    }
+    let book = rec.code_str()?;
     match r.get("page").and_then(|p| p.as_i64()) {
         Some(n) => Some(format!("{book}{n}")),
         None => Some(book.to_string()),

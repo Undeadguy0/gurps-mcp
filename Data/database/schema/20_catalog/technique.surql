@@ -6,7 +6,7 @@ DEFINE FIELD OVERWRITE id ON technique TYPE array<string, 2> ASSERT fn::id_ok($v
 DEFINE FIELD OVERWRITE sid ON technique TYPE string VALUE record::id($this.id)[1] READONLY;
 DEFINE FIELD OVERWRITE pack ON technique TYPE record<pack> VALUE type::record('pack', record::id($this.id)[0]) ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs ON technique TYPE array<object> DEFAULT [];
-DEFINE FIELD OVERWRITE source_refs[*].book ON technique TYPE string;
+DEFINE FIELD OVERWRITE source_refs[*].book ON technique TYPE record<ref_book> ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs[*].page ON technique TYPE option<int>;
 DEFINE FIELD OVERWRITE tags ON technique TYPE array<string> DEFAULT [];
 DEFINE FIELD OVERWRITE rank ON technique TYPE int DEFAULT 0;
@@ -33,4 +33,4 @@ DEFINE FIELD OVERWRITE prereqs ON technique TYPE option<object> FLEXIBLE ASSERT 
 DEFINE FIELD OVERWRITE features ON technique TYPE array<object> FLEXIBLE DEFAULT [] ASSERT $value.all(|$f| fn::feature_ok($f));
 
 DEFINE FIELD OVERWRITE _refs ON technique TYPE array<record> REFERENCE ON DELETE REJECT
-	VALUE array::distinct(array::flatten([[pack, parent_skill, difficulty], [derived_from].filter(|$v| $v != NONE), fn::prereq_refs(prereqs), fn::feature_refs(features)]));
+	VALUE array::distinct(array::flatten([source_refs.map(|$s| $s.book), [pack, parent_skill, difficulty], [derived_from].filter(|$v| $v != NONE), fn::prereq_refs(prereqs), fn::feature_refs(features)]));

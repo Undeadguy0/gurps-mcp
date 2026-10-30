@@ -1,6 +1,6 @@
 -- ЗАГЛУШКИ (placeholder): не данные GURPS. Все записи verified = false; наполнение — отдельная задача (Мастер).
 UPSERT skill:['basic', 'sword_a'] SET attribute = ref_attribute:DX, difficulty = ref_difficulty:A,
-	categories = [ref_skill_category:melee], source_refs = [{ book: 'B', page: NONE }];
+	categories = [ref_skill_category:melee], source_refs = [{ book: ref_book:B, page: NONE }];
 UPSERT skill:['basic', 'sword_b'] SET attribute = ref_attribute:DX, difficulty = ref_difficulty:A, categories = [ref_skill_category:melee];
 UPSERT skill:['basic', 'unarmed_a'] SET attribute = ref_attribute:DX, difficulty = ref_difficulty:E,
 	-- правило безоружного боя: +1 к урону на кубик для атак этим навыком

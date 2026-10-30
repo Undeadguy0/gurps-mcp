@@ -23,13 +23,17 @@ Data/
 ```
 
 ## Команды (запускать из `Data/`)
+Требуется **SurrealDB ≥ 3.3** (проверено на 3.3.5): в 3.1.x вычисляемое `_refs` (VALUE) считается
+раньше подстановки `pack`/DEFAULT, и вставка падает.
 ```sh
 cp .env.example .env
 surreal start --user root --pass root memory   # dev-БД в памяти
-surrealkit sync --allow-empty-prune            # схема = файлы
+surrealkit sync                                # схема = файлы
 surrealkit seed
 surrealkit test
 ```
+`--allow-empty-prune` нужен только при пустом каталоге схемы; `surrealkit seed --force`
+(повторный прогон уже применённых сидов) есть только в SurrealKit 1.0 (в 0.7 — пересоздать БД).
 Переход со старой схемы (строковые id, name_ru) не поддерживается: dev-БД пересоздать
 (`REMOVE DATABASE gurps;`), затем sync + seed.
 
@@ -110,9 +114,20 @@ surrealkit test
   (цена каждого следующего уровня техники, последний повторяется).
 - `ref_skill_cost { points, level_offset }` — таблица очки -> прибавка к уровню;
   сверх последней строки — +1 за каждые `ref_rule:skill_cost_extra_points`.
-- `ref_st_damage { st, thr { dice, mod }, sw { dice, mod } }` — урон от ST.
+- `ref_st_damage { st, thr { dice, mod }, sw { dice, mod } }` — урон от ST. Вне строк таблицы:
+  между строками — режим `ref_rule:st_damage_lookup` (`text`, сейчас `floor` = ближайшая строка снизу);
+  выше последней — +`st_damage_extra_dice` кубиков к thr и sw за каждые полные `st_damage_extra_st` ST.
 - `ref_rule { code, value | text }`: `basic_lift_divisor`, `basic_lift_round_min`, `parry_base`,
   `parry_skill_divisor`, `limitation_floor_percent`, `skill_cost_extra_points`, `spell_attribute`, `magery_trait`.
+- `ref_hit_location`: `to_hit_mod`, `paired`, `extra_dr`, `knockdown_mod`, `knockdown_damage_types`,
+  `wound_mults[] { damage_type, mult, condition?: ref_wound_condition, note }`. Броски 3d6 локации
+  зависят от плана тела, поэтому лежат не в локации, а в `ref_body_plan_location`.
+- `ref_body_plan { code, is_default }` (ровно один default) и `ref_body_plan_location`
+  (id `[plan, location]`, `rolls: [[от, до], ...]`, пустой — только прицельно; `to_hit_mod` — переопределение;
+  диапазоны одного плана не пересекаются). `character.body_plan` — NONE = план по умолчанию.
+- `ref_damage_modifier.value_kind`: `none | dice | number | multiplier | divisor | text`.
+- `ref_self_control.kind`: `roll` (нужен `roll` 3..18) или `always` (без броска).
+- `ref_book { code, note }`: книги; `source_refs[].book` — запись `ref_book:B`, не строка.
 `rules.negative_rounding` листа в схему не добавлен: это опция стола, а не факт персонажа.
 
 ## Ссылочная целостность
@@ -124,5 +139,7 @@ surrealkit test
   (owner у custom-пака, shield у щита, spec у required-навыка) — через `DEFINE EVENT ... THROW`.
 
 ## Сиды
-Только заглушки (`verified = false`, урон/стоимость = `PLACEHOLDER`, числа справочников расчёта — фиктивные), нужные для тестов и примеров.
+`00_packs`, `01_books`, `04_wound_conditions`, `05_refs` (данные Мастера), `06_body_plans`,
+`07_refs_pending` (новые правила, `verified = false`), каталог 10..50, переводы 90/91.
+Каталог и персонажи — заглушки (`verified = false`, урон/стоимость = `PLACEHOLDER`, числа справочников расчёта — фиктивные), нужные для тестов и примеров.
 Наполнение реальными данными — отдельная задача (Мастер).

@@ -6,7 +6,7 @@ DEFINE FIELD OVERWRITE id ON modifier TYPE array<string, 2> ASSERT fn::id_ok($va
 DEFINE FIELD OVERWRITE sid ON modifier TYPE string VALUE record::id($this.id)[1] READONLY;
 DEFINE FIELD OVERWRITE pack ON modifier TYPE record<pack> VALUE type::record('pack', record::id($this.id)[0]) ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs ON modifier TYPE array<object> DEFAULT [];
-DEFINE FIELD OVERWRITE source_refs[*].book ON modifier TYPE string;
+DEFINE FIELD OVERWRITE source_refs[*].book ON modifier TYPE record<ref_book> ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE source_refs[*].page ON modifier TYPE option<int>;
 DEFINE FIELD OVERWRITE tags ON modifier TYPE array<string> DEFAULT [];
 DEFINE FIELD OVERWRITE rank ON modifier TYPE int DEFAULT 0;
@@ -19,4 +19,4 @@ DEFINE FIELD OVERWRITE value.kind ON modifier TYPE string ASSERT $value IN ['%',
 DEFINE FIELD OVERWRITE value.amount ON modifier TYPE number;
 DEFINE FIELD OVERWRITE levels ON modifier TYPE option<int>;
 DEFINE FIELD OVERWRITE incompatible ON modifier TYPE array<record<modifier>> DEFAULT [] ASSERT fn::refs_ok($value);
-DEFINE FIELD OVERWRITE _refs ON modifier TYPE array<record> REFERENCE ON DELETE REJECT VALUE [pack];
+DEFINE FIELD OVERWRITE _refs ON modifier TYPE array<record> REFERENCE ON DELETE REJECT VALUE array::distinct(array::flatten([[pack], source_refs.map(|$s| $s.book)]));
