@@ -63,6 +63,50 @@ async fn tools_against_seeded_db() {
     .await
     .unwrap();
     assert!(!r["results"].as_array().unwrap().is_empty(), "{r}");
+    // ru: другая словоформа находится стеммером gurps_ru (без отката на подстроку)
+    let r = gurps_mcp::tools::search::search(
+        &db,
+        SearchParams {
+            query: "специализации".into(),
+            table: None,
+            lang: "ru".into(),
+            limit: None,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(!r["results"].as_array().unwrap().is_empty(), "{r}");
+    // en: стемминг gurps_en, ru-тексты не попадают
+    let r = gurps_mcp::tools::search::search(
+        &db,
+        SearchParams {
+            query: "specialization".into(),
+            table: None,
+            lang: "en".into(),
+            limit: None,
+        },
+    )
+    .await
+    .unwrap();
+    let res = r["results"].as_array().unwrap();
+    assert!(!res.is_empty(), "{r}");
+    assert!(
+        res.iter().all(|x| x["text"].as_str().unwrap().is_ascii()),
+        "{r}"
+    );
+    // язык без полнотекстового индекса — ошибка параметров
+    let e = gurps_mcp::tools::search::search(
+        &db,
+        SearchParams {
+            query: "x".into(),
+            table: None,
+            lang: "de".into(),
+            limit: None,
+        },
+    )
+    .await
+    .unwrap_err();
+    assert!(matches!(e, ToolError::InvalidParams(_)), "{e}");
     // пустой запрос — ошибка параметров
     let e = gurps_mcp::tools::search::search(
         &db,
@@ -136,7 +180,7 @@ async fn tools_against_seeded_db() {
     .unwrap();
     assert_eq!(c["character"]["name"], "Тестовый герой", "{c}");
     assert_eq!(c["skills"].as_array().unwrap().len(), 3, "{c}");
-    assert_eq!(c["traits"].as_array().unwrap().len(), 3, "{c}");
+    assert_eq!(c["traits"].as_array().unwrap().len(), 5, "{c}");
     assert_eq!(c["items"].as_array().unwrap().len(), 3, "{c}");
     assert!(
         c["skills"]

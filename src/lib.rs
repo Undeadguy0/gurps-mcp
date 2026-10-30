@@ -1,4 +1,5 @@
 //! MCP-сервер для базы GURPS (SurrealDB).
+pub mod calc;
 pub mod config;
 pub mod db;
 pub mod error;

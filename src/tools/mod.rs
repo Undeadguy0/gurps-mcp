@@ -1,5 +1,6 @@
 //! Инструменты по темам. Каждая функция принимает &Db и параметры, возвращает JSON.
 pub mod character;
+pub mod compute;
 pub mod entry;
 pub mod packs;
 pub mod search;
@@ -34,6 +35,9 @@ impl CatalogTable {
 pub fn default_lang() -> String {
     "ru".into()
 }
+
+/// Языки с полнотекстовым индексом (поле `translation.text_<lang>`).
+pub const FT_LANGS: [&str; 2] = ["ru", "en"];
 
 pub(crate) fn check_lang(lang: &str) -> crate::error::ToolResult<()> {
     if lang.len() == 2 && lang.bytes().all(|b| b.is_ascii_lowercase()) {

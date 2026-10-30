@@ -1,7 +1,11 @@
 //! MCP-обработчик: маршрутизатор инструментов и сведения о сервере.
 use crate::db::Db;
 use crate::tools::{
-    self, character::GetCharacterParams, entry::GetEntryParams, search::SearchParams,
+    self,
+    character::GetCharacterParams,
+    compute::{CheckPrereqsParams, ComputeCharacterParams},
+    entry::GetEntryParams,
+    search::SearchParams,
 };
 use rmcp::handler::server::{router::tool::ToolRouter, wrapper::Parameters};
 use rmcp::model::{CallToolResult, Implementation, ServerCapabilities, ServerConfig};
@@ -58,6 +62,25 @@ impl GurpsServer {
         Parameters(p): Parameters<GetCharacterParams>,
     ) -> Result<CallToolResult, ErrorData> {
         ok(tools::character::get_character(&self.db, p).await?)
+    }
+
+    /// Расчёт персонажа: атрибуты и производные, уровни навыков/техник/заклинаний, атаки,
+    /// сумма очков против журнала, нарушения пререквизитов, недостающие константы справочников.
+    #[tool(annotations(read_only_hint = true))]
+    pub async fn compute_character(
+        &self,
+        Parameters(p): Parameters<ComputeCharacterParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        ok(tools::compute::compute_character(&self.db, p).await?)
+    }
+
+    /// Проверка пререквизитов записи каталога (действующей по приоритету паков) для персонажа.
+    #[tool(annotations(read_only_hint = true))]
+    pub async fn check_prereqs(
+        &self,
+        Parameters(p): Parameters<CheckPrereqsParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        ok(tools::compute::check_prereqs(&self.db, p).await?)
     }
 }
 

@@ -53,7 +53,14 @@ async fn stdio_initialize_and_list_tools() {
     names.sort();
     assert_eq!(
         names,
-        ["get_character", "get_entry", "list_packs", "search"],
+        [
+            "check_prereqs",
+            "compute_character",
+            "get_character",
+            "get_entry",
+            "list_packs",
+            "search"
+        ],
         "{list}"
     );
 
@@ -73,6 +80,25 @@ async fn stdio_initialize_and_list_tools() {
         call["result"]["structuredContent"]["record"]["id"]
             .to_string()
             .contains("homebrew"),
+        "{call}"
+    );
+
+    stdin
+        .write_all(
+            send(
+                serde_json::json!({"jsonrpc":"2.0","id":4,"method":"tools/call",
+        "params":{"name":"compute_character","arguments":{"id":"test_hero"}}}),
+            )
+            .as_bytes(),
+        )
+        .await
+        .unwrap();
+    let call: serde_json::Value =
+        serde_json::from_str(&out.next_line().await.unwrap().unwrap()).unwrap();
+    let sc = &call["result"]["structuredContent"];
+    assert!(sc["attributes"]["values"]["ST"].is_number(), "{call}");
+    assert!(
+        sc["attacks"].as_array().is_some_and(|a| !a.is_empty()),
         "{call}"
     );
 }
