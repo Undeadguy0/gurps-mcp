@@ -766,10 +766,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "gurps-calc"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "gurps-mcp"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gurps-calc",
  "rmcp",
  "schemars",
  "serde",

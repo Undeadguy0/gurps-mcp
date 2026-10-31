@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "tools/sheet-bridge"]
+members = [".", "crates/gurps-calc", "tools/sheet-bridge"]
 resolver = "3"
 
 [package]
@@ -8,6 +8,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+gurps-calc = { path = "crates/gurps-calc" }
 rmcp = { version = "3.8.0", features = ["server", "transport-io", "macros"] }
 schemars = "1.2.3"
 serde = { version = "1.0.229", features = ["derive"] }

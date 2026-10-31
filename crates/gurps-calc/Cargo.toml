@@ -1,0 +1,10 @@
+[package]
+name = "gurps-calc"
+version = "0.1.0"
+edition = "2024"
+description = "Расчёт персонажа GURPS 4e: чистые функции над данными из БД (все константы правил приходят во входных справочниках)"
+publish = false
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
