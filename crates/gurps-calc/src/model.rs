@@ -273,11 +273,24 @@ pub struct AttackModeDef {
     pub technique: Option<String>,
 }
 
+/// Щит предмета: DB и навык блока.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct ShieldDef {
+    #[serde(default)]
+    pub db: i64,
+    #[serde(default)]
+    pub block_skill: Option<String>,
+    #[serde(default)]
+    pub block_spec: Option<String>,
+}
+
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct OwnedItem {
     pub sid: String,
     #[serde(default)]
     pub equipped: bool,
+    #[serde(default)]
+    pub shield: Option<ShieldDef>,
     #[serde(default)]
     pub features: Vec<J>,
     #[serde(default)]

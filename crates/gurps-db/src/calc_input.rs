@@ -56,6 +56,8 @@ pub fn query() -> String {
                         record::id(out.difficulty) AS difficulty, points, out.prereqs AS prereqs
                      FROM has_spell WHERE in = $c),
             items: (SELECT out.sid AS sid, equipped, out.features AS features,
+                        IF out.shield {{ {{ db: out.shield.db, block_skill: out.shield.block_skill.skill.sid,
+                            block_spec: out.shield.block_skill.spec }} }} ELSE {{ NONE }} AS shield,
                         (out.attack_modes ?? []).map(|$m| {item}) AS attack_modes
                      FROM owns_item WHERE in = $c),
             natural_attacks: array::distinct((SELECT VALUE sid FROM attack_mode WHERE natural = true))

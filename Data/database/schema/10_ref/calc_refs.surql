@@ -20,7 +20,10 @@
 --   disadvantage_limit_percent — лимит недостатков, % стартовых очков (проверка в приложении)
 --   quirk_limit               — обычный максимум причуд (проверка в приложении)
 --   Опции правил персонажа перекрывают ref_rule по code (Input.rule_overrides).
---   Block: правила не заведены (ждём ответа Мастера), TODO
+--   block_base                — прибавка к Block (Block = block_base + навык блока / block_skill_divisor)
+--   block_skill_divisor       — делитель навыка блока
+--   block_rounding (text)     — округление навык/делитель: floor | round | ceil
+--   (значения block_* не засеяны: ждём проверенных данных от Мастера; навык — item.shield.block_skill)
 --   move_attribute (text)     — код ref_attribute, который умножается на move_mult нагрузки
 --   уровни нагрузки — таблица ref_encumbrance (schema/10_ref/encumbrance.surql)
 DEFINE TABLE OVERWRITE ref_rule SCHEMAFULL;

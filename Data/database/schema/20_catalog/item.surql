@@ -62,6 +62,10 @@ DEFINE FIELD OVERWRITE shield.db ON item TYPE int ASSERT $value >= 0;
 DEFINE FIELD OVERWRITE shield.parry ON item TYPE option<int>;
 DEFINE FIELD OVERWRITE shield.dr ON item TYPE option<int>;
 DEFINE FIELD OVERWRITE shield.hp ON item TYPE option<int>;
+-- Навык блока этим щитом (Shield, Cloak...) и необязательная специализация (Buckler...)
+DEFINE FIELD OVERWRITE shield.block_skill ON item TYPE option<object>;
+DEFINE FIELD OVERWRITE shield.block_skill.skill ON item TYPE record<skill>;
+DEFINE FIELD OVERWRITE shield.block_skill.spec ON item TYPE option<string>;
 -- Контейнер: вместимость (вложенность — owns_item.contained_in)
 DEFINE FIELD OVERWRITE container ON item TYPE option<object>;
 DEFINE FIELD OVERWRITE container.capacity_weight ON item TYPE option<number>;
@@ -72,6 +76,7 @@ DEFINE FIELD OVERWRITE features ON item TYPE array<object> FLEXIBLE DEFAULT [] A
 DEFINE FIELD OVERWRITE _refs ON item TYPE array<record> REFERENCE ON DELETE REJECT
 	VALUE array::distinct(array::flatten([source_refs.map(|$s| $s.book), 
 		[pack, tl, lc],
+		[shield.block_skill.skill],
 		array::flatten(attack_modes.map(|$m| array::flatten([[$m.skill, $m.damage.type], $m.damage.modifiers ?? [], $m.notes ?? [], fn::attack_refs($m)]))),
 		array::flatten((armor.locations ?? []).map(|$l| array::flatten([[$l.loc], ($l.dr_vs ?? []).map(|$d| $d.damage_type)]))),
 		fn::feature_refs(features)

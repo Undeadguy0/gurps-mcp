@@ -292,3 +292,46 @@ fn negative_trait_rounding_from_rules_and_overrides() {
     assert_eq!(calc::points::trait_cost(&refs(), &t, &mut m), -7);
     assert!(m.0.contains("ref_rule:trait_cost_negative_rounding"));
 }
+
+/// Значения block_* — только тестовые (в сидах их нет до проверки Мастером).
+#[test]
+fn block_and_shield_db() {
+    let mut r = enc_refs();
+    let more: Vec<RuleRow> = serde_json::from_value(json!([
+        { "code": "block_base", "value": 3 }, { "code": "block_skill_divisor", "value": 2 },
+        { "code": "block_rounding", "text": "floor" }
+    ]))
+    .unwrap();
+    r.rules.extend(more);
+    let mut inp: Input = serde_json::from_value(json!({
+        "carried_weight": 30,
+        "attributes": [ { "code": "ST", "levels": 2 } ],
+        "skills": [ { "sid": "shield", "attribute": "DX", "difficulty": "E", "points": 4, "spec": "buckler" } ],
+        "traits": [ { "sid": "cr", "cost": { "type": "fixed", "base": 15 },
+                      "features": [ { "kind": "defense_bonus", "amount": 1 } ] } ],
+        "items": [
+            { "sid": "buckler", "equipped": true, "shield": { "db": 1, "block_skill": "shield", "block_spec": "buckler" } },
+            { "sid": "big", "equipped": false, "shield": { "db": 3, "block_skill": "shield" } }
+        ]
+    }))
+    .unwrap();
+    inp.refs = r.clone();
+    let c = calc::compute(&inp);
+    assert!(
+        c.missing_constants.0.is_empty(),
+        "{:?}",
+        c.missing_constants
+    );
+    let d = &c.defenses;
+    // ST 12: BL 29, перенос 30 — Light
+    // Shield (E) 4 очка: DX+2 = 12 -> 3 + 6 + 1 (бонус) + 1 (DB) = 11; нагрузка Light на Block не влияет
+    assert_eq!(
+        (d.block, d.block_item.as_deref(), d.db),
+        (Some(11), Some("buckler"), 1)
+    );
+    // Dodge: 8 - 1 (Light) + 1 (бонус) + 1 (DB) = 9
+    assert_eq!(d.dodge, Some(9));
+    let mut m = Missing::default();
+    assert_eq!(calc::encumbrance::block(&enc_refs(), 12, &mut m), None);
+    assert!(m.0.contains("ref_rule:block_base") && m.0.contains("ref_rule:block_skill_divisor"));
+}

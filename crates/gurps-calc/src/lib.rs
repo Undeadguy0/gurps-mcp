@@ -71,7 +71,7 @@ pub fn compute(inp: &Input) -> Computed {
     let sk = skills::Skills::compute(inp, &attrs, &fx, &mut miss);
     let attacks = attacks::compute(inp, &attrs, &sk, &fx, &mut miss);
     let enc = encumbrance::compute(inp, &attrs, &mut miss);
-    let defenses = encumbrance::defenses(&enc, &attacks, &fx);
+    let defenses = encumbrance::defenses(inp, &enc, &attacks, &sk, &fx, &mut miss);
     let points = points::compute(inp, &mut miss);
     let ctx = prereq::Ctx::new(inp, &attrs, &sk, &mut miss);
     let prereq_violations = prereq::check_all(inp, &ctx);

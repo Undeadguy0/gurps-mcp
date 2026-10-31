@@ -5,12 +5,14 @@
 //! - Move = floor(база × `move_mult`), не ниже `ref_rule:encumbrance_move_min`, если база не ниже его;
 //!   база — атрибут `ref_rule:move_attribute`;
 //! - Dodge = floor(атрибут `ref_rule:dodge_attribute`) + `ref_rule:dodge_base` + `dodge_mod`,
-//!   при нагрузке не ниже `ref_rule:dodge_min`; бонусы защит (`defense_bonus`) — в [`Defenses`].
+//!   при нагрузке не ниже `ref_rule:dodge_min`; бонусы защит (`defense_bonus`) и DB щита — в [`Defenses`];
+//! - Block = `block_base` + округл.(навык блока щита / `block_skill_divisor`) + бонус + DB, без нагрузки.
 use super::Missing;
 use super::attacks::Attack;
 use super::attributes::Derived;
 use super::features::Effects;
 use super::model::{EncumbranceRow, Input, Refs};
+use super::skills::Skills;
 use serde::Serialize;
 
 const EPS: f64 = 1e-9;
@@ -150,21 +152,66 @@ pub fn compute(inp: &Input, attrs: &Derived, miss: &mut Missing) -> Encumbrance 
 
 #[derive(Debug, Clone, Serialize, PartialEq, Default)]
 pub struct Defenses {
-    /// Dodge под нагрузкой + бонус `defense_bonus(dodge)`.
+    /// Dodge под нагрузкой + бонус `defense_bonus(dodge)` + DB щита.
     pub dodge: Option<i64>,
-    /// Лучшее Parry: среди атак экипированных предметов, а если их нет — природных.
+    /// Лучшее Parry (атаки предметов, иначе природные; с бонусом parry) + DB щита.
     pub parry: Option<i64>,
     /// sid атаки (и предмет), давшей лучшее Parry.
     pub parry_from: Option<String>,
     pub parry_item: Option<String>,
+    /// Block = block_base + округл.(навык блока / block_skill_divisor) + бонус block + DB; нагрузка не влияет.
+    pub block: Option<i64>,
+    /// Щит, давший Block, и навык блока.
+    pub block_item: Option<String>,
+    pub block_skill: Option<String>,
+    /// DB экипированного щита (лучший); считается для атак спереди.
+    pub db: i64,
+    pub db_item: Option<String>,
     /// Бонусы защит из эффектов: dodge/parry/block.
     pub dodge_bonus: i64,
     pub parry_bonus: i64,
     pub block_bonus: i64,
-    // TODO(Block): правила Block не заведены в БД — ждём ответа Мастера; не считаем и не хардкодим.
 }
 
-pub fn defenses(enc: &Encumbrance, attacks: &[Attack], fx: &Effects) -> Defenses {
+/// Округление навык / делитель по `ref_rule:block_rounding`.
+fn rounded(refs: &Refs, x: f64, miss: &mut Missing) -> Option<i64> {
+    match refs.text("block_rounding") {
+        Some("floor") => Some(x.floor() as i64),
+        Some("round") => Some(x.round() as i64),
+        Some("ceil") => Some(x.ceil() as i64),
+        Some(o) => {
+            miss.add(format!("ref_rule:block_rounding (неизвестный режим {o:?})"));
+            None
+        }
+        None => {
+            miss.add("ref_rule:block_rounding");
+            None
+        }
+    }
+}
+
+/// Block щитом: уровень навыка блока (с учётом специализации) -> база правил.
+pub fn block(refs: &Refs, skill_level: i64, miss: &mut Missing) -> Option<i64> {
+    let base = refs.value("block_base");
+    let div = refs.value("block_skill_divisor").filter(|d| *d > 0.0);
+    if base.is_none() {
+        miss.add("ref_rule:block_base");
+    }
+    if div.is_none() {
+        miss.add("ref_rule:block_skill_divisor");
+    }
+    let r = rounded(refs, skill_level as f64 / div?, miss)?;
+    Some(base? as i64 + r)
+}
+
+pub fn defenses(
+    inp: &Input,
+    enc: &Encumbrance,
+    attacks: &[Attack],
+    sk: &Skills,
+    fx: &Effects,
+    miss: &mut Missing,
+) -> Defenses {
     let best = |armed: bool| {
         attacks
             .iter()
@@ -173,14 +220,43 @@ pub fn defenses(enc: &Encumbrance, attacks: &[Attack], fx: &Effects) -> Defenses
             .max_by_key(|x| x.0)
     };
     let p = best(true).or_else(|| best(false));
+    let shields: Vec<_> = inp
+        .items
+        .iter()
+        .filter(|i| i.equipped)
+        .filter_map(|i| i.shield.as_ref().map(|s| (i, s)))
+        .collect();
+    let dbs = shields.iter().max_by_key(|(_, s)| s.db);
+    let db = dbs.map(|(_, s)| s.db).unwrap_or(0);
+    let block_bonus = fx.defense("block");
+    // лучший Block среди щитов с навыком блока, который у персонажа есть
+    let blk = shields
+        .iter()
+        .filter_map(|(i, s)| {
+            let sid = s.block_skill.as_deref()?;
+            let lvl = sk
+                .skills
+                .iter()
+                .chain(&sk.defaulted)
+                .filter(|x| x.sid == sid && (s.block_spec.is_none() || x.spec == s.block_spec))
+                .filter_map(|x| x.level)
+                .max()?;
+            Some((block(&inp.refs, lvl, miss)? + block_bonus + s.db, *i, sid))
+        })
+        .max_by_key(|x| x.0);
     let dodge_bonus = fx.defense("dodge");
     Defenses {
-        dodge: enc.dodge.map(|d| d + dodge_bonus),
-        parry: p.map(|x| x.0),
+        dodge: enc.dodge.map(|d| d + dodge_bonus + db),
+        parry: p.map(|x| x.0 + db),
         parry_from: p.map(|x| x.1.sid.clone()),
         parry_item: p.and_then(|x| x.1.item.clone()),
+        block: blk.map(|x| x.0),
+        block_item: blk.map(|x| x.1.sid.clone()),
+        block_skill: blk.map(|x| x.2.to_string()),
+        db,
+        db_item: dbs.map(|(i, _)| i.sid.clone()),
         dodge_bonus,
         parry_bonus: fx.defense("parry"),
-        block_bonus: fx.defense("block"),
+        block_bonus,
     }
 }
