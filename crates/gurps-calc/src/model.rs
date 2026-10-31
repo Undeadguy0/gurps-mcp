@@ -88,6 +88,15 @@ pub struct Refs {
 }
 
 impl Refs {
+    /// Копия с перекрытыми правилами (опции персонажа).
+    pub fn with_overrides(&self, over: &[RuleRow]) -> Refs {
+        let mut r = self.clone();
+        for o in over {
+            r.rules.retain(|x| x.code != o.code);
+            r.rules.push(o.clone());
+        }
+        r
+    }
     pub fn attr(&self, code: &str) -> Option<&AttrDef> {
         self.attributes.iter().find(|a| a.code == code)
     }
@@ -313,4 +322,7 @@ pub struct Input {
     pub natural_attacks: Vec<AttackModeDef>,
     #[serde(default)]
     pub ledger: Vec<LedgerRow>,
+    /// Опции правил персонажа: перекрывают `ref_rule` с тем же code.
+    #[serde(default)]
+    pub rule_overrides: Vec<RuleRow>,
 }

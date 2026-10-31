@@ -202,7 +202,8 @@ fn enc_refs() -> Refs {
         "rules": [
             { "code": "dodge_attribute", "text": "Speed" }, { "code": "dodge_base", "value": 3 },
             { "code": "dodge_min", "value": 1 }, { "code": "encumbrance_move_min", "value": 1 },
-            { "code": "move_attribute", "text": "Move" }
+            { "code": "move_attribute", "text": "Move" },
+            { "code": "trait_cost_negative_rounding", "text": "toward_positive" }
         ],
         "encumbrance": [
             { "code": "heavy", "level": 2, "max_load_bl": 6, "move_mult": 0.4, "dodge_mod": -2 },
@@ -267,4 +268,27 @@ fn encumbrance_and_defenses_in_compute() {
     assert_eq!(e.table[2].max_weight, Some(120.0));
     assert_eq!(c.defenses.dodge, Some(7));
     assert_eq!(c.defenses.parry, None);
+}
+
+#[test]
+fn negative_trait_rounding_from_rules_and_overrides() {
+    let t: OwnedTrait = serde_json::from_value(json!({
+        "sid": "x", "cost": { "type": "fixed", "base": -15 },
+        "modifiers": [ { "type": "lim", "value_kind": "%", "amount": -50 } ]
+    }))
+    .unwrap();
+    let r = enc_refs();
+    let mut m = Missing::default();
+    assert_eq!(calc::points::trait_cost(&r, &t, &mut m), -7);
+    let over: Vec<RuleRow> = serde_json::from_value(
+        json!([{ "code": "trait_cost_negative_rounding", "text": "by_magnitude" }]),
+    )
+    .unwrap();
+    assert_eq!(
+        calc::points::trait_cost(&r.with_overrides(&over), &t, &mut m),
+        -8
+    );
+    assert!(m.0.is_empty(), "{:?}", m.0);
+    assert_eq!(calc::points::trait_cost(&refs(), &t, &mut m), -7);
+    assert!(m.0.contains("ref_rule:trait_cost_negative_rounding"));
 }

@@ -22,6 +22,9 @@ pub struct Points {
     pub matches_ledger: bool,
 }
 
+/// Режим округления отрицательной дробной стоимости черты: `toward_positive` (-7.5 -> -7) | `by_magnitude` (-7.5 -> -8).
+pub const NEGATIVE_ROUNDING: &str = "trait_cost_negative_rounding";
+
 /// Стоимость черты: база/уровни, затем модификаторы (% суммой с нижней границей, pts).
 pub fn trait_cost(refs: &Refs, t: &OwnedTrait, miss: &mut Missing) -> i64 {
     let lvl = t.level.unwrap_or(0);
@@ -51,12 +54,21 @@ pub fn trait_cost(refs: &Refs, t: &OwnedTrait, miss: &mut Missing) -> i64 {
             None => miss.add("ref_rule:limitation_floor_percent"),
         }
     }
-    // дроби округляются вверх (по модулю для недостатков — к нулю не уходим)
+    // дроби: положительные — вверх; отрицательные — по ref_rule:trait_cost_negative_rounding
     let v = (base as f64 + flat) * (1.0 + pct / 100.0);
-    if v >= 0.0 {
-        v.ceil() as i64
-    } else {
-        -((-v).ceil() as i64)
+    if v >= 0.0 || v.fract() == 0.0 {
+        return v.ceil() as i64;
+    }
+    match refs.text(NEGATIVE_ROUNDING) {
+        Some("toward_positive") => v.ceil() as i64,
+        Some("by_magnitude") => v.floor() as i64,
+        other => {
+            miss.add(match other {
+                Some(o) => format!("ref_rule:{NEGATIVE_ROUNDING} (неизвестный режим {o:?})"),
+                None => format!("ref_rule:{NEGATIVE_ROUNDING}"),
+            });
+            v.ceil() as i64
+        }
     }
 }
 

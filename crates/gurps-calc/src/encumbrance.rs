@@ -161,6 +161,7 @@ pub struct Defenses {
     pub dodge_bonus: i64,
     pub parry_bonus: i64,
     pub block_bonus: i64,
+    // TODO(Block): правила Block не заведены в БД — ждём ответа Мастера; не считаем и не хардкодим.
 }
 
 pub fn defenses(enc: &Encumbrance, attacks: &[Attack], fx: &Effects) -> Defenses {

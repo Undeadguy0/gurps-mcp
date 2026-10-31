@@ -59,6 +59,12 @@ pub struct Computed {
 }
 
 pub fn compute(inp: &Input) -> Computed {
+    if !inp.rule_overrides.is_empty() {
+        let mut i = inp.clone();
+        i.refs = inp.refs.with_overrides(&inp.rule_overrides);
+        i.rule_overrides.clear();
+        return compute(&i);
+    }
     let mut miss = Missing::default();
     let fx = features::Effects::collect(inp);
     let attrs = attributes::compute(inp, &fx, &mut miss);

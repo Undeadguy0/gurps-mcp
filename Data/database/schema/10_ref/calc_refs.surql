@@ -16,6 +16,11 @@
 --   dodge_base                — прибавка к dodge_attribute (Dodge = floor(атрибут) + dodge_base)
 --   encumbrance_move_min      — нижняя граница Move под нагрузкой (если Basic Move > 0)
 --   dodge_min                 — нижняя граница Dodge под нагрузкой (B17)
+--   trait_cost_negative_rounding (text) — округление дробной отрицательной стоимости черты: toward_positive | by_magnitude
+--   disadvantage_limit_percent — лимит недостатков, % стартовых очков (проверка в приложении)
+--   quirk_limit               — обычный максимум причуд (проверка в приложении)
+--   Опции правил персонажа перекрывают ref_rule по code (Input.rule_overrides).
+--   Block: правила не заведены (ждём ответа Мастера), TODO
 --   move_attribute (text)     — код ref_attribute, который умножается на move_mult нагрузки
 --   уровни нагрузки — таблица ref_encumbrance (schema/10_ref/encumbrance.surql)
 DEFINE TABLE OVERWRITE ref_rule SCHEMAFULL;

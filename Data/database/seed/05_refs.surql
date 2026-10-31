@@ -250,3 +250,6 @@ UPSERT ref_mana_level:normal SET code = 'normal', rank = 2, pack = pack:basic, s
 UPSERT ref_mana_level:high SET code = 'high', rank = 3, pack = pack:basic, source_refs = [{ book: ref_book:M, page: 6 }], verified = true;
 UPSERT ref_mana_level:very_high SET code = 'very_high', rank = 4, pack = pack:basic, source_refs = [{ book: ref_book:M, page: 6 }], verified = true;
 UPDATE pack:basic SET spell_system = ref_spell_system:standard;
+UPSERT ref_rule:trait_cost_negative_rounding SET code = 'trait_cost_negative_rounding', text = 'toward_positive', pack = pack:basic, source_refs = [{ book: ref_book:B, page: 101 }], verified = true, note = 'опция правил: дробная отрицательная стоимость черты после модификаторов округляется вверх (-7.5 -> -7, подтверждено Мастером); by_magnitude: -7.5 -> -8';
+UPSERT ref_rule:disadvantage_limit_percent SET code = 'disadvantage_limit_percent', value = 50, pack = pack:basic, source_refs = [{ book: ref_book:B, page: 11 }], verified = true, note = 'опция правил: лимит недостатков, % от стартовых очков (причуды отдельно)';
+UPSERT ref_rule:quirk_limit SET code = 'quirk_limit', value = 5, pack = pack:basic, source_refs = [{ book: ref_book:B, page: 11 }], verified = true, note = 'обычный максимум причуд (по -1)';
