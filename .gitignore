@@ -1,3 +1,6 @@
 .env
 Data/data/
 history.txt
+/target/
+target/
+.idea/
