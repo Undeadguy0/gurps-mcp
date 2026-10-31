@@ -59,7 +59,7 @@ pub fn to_db(ctx: &mut Ctx, fs: &[Feature], what: &str) -> Vec<Sv> {
                     out.push(base("spell_bonus", *amount, *per_level));
                 }
                 for c in colleges {
-                    out.push(base("spell_bonus", *amount, *per_level).with("college", Sv::Rec(spells::college_rec(c))));
+                    out.push(base("spell_bonus", *amount, *per_level).with("college", Sv::Rec(spells::college_rec(ctx.resolver, c))));
                 }
             }
         }

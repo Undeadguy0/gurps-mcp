@@ -1,7 +1,6 @@
 //! Заклинания: `SpellDef` <-> `spell`.
 
 use super::{skills, Ctx, Entity};
-use crate::ids;
 use crate::jsonx;
 use crate::report::{Dir, Report};
 use crate::sheet::SpellDef;
@@ -11,8 +10,8 @@ use serde_json::Value as J;
 /// Заглушка обязательных полей, которых нет в листе.
 pub const UNKNOWN: &str = "?";
 
-pub fn college_rec(name: &str) -> Rec {
-    Rec::code("ref_college", &ids::slug(name))
+pub fn college_rec(r: &super::Resolver, name: &str) -> Rec {
+    Rec::code("ref_college", &r.college_code(name))
 }
 
 pub fn to_db(ctx: &mut Ctx, d: &SpellDef) -> anyhow::Result<Entity> {
@@ -36,7 +35,10 @@ pub fn to_db(ctx: &mut Ctx, d: &SpellDef) -> anyhow::Result<Entity> {
     );
     let raw = || Sv::obj().with("raw", Sv::str(UNKNOWN));
     let mut c = Sv::obj()
-        .with("colleges", Sv::Arr(d.college.iter().map(|n| Sv::Rec(college_rec(n))).collect()))
+        .with(
+            "colleges",
+            Sv::Arr(d.college.iter().map(|n| Sv::Rec(college_rec(ctx.resolver, n))).collect()),
+        )
         .with("classes", Sv::Arr(vec![Sv::Rec(Rec::code("ref_spell_class", &ctx.spell_class))]))
         .with("difficulty", skills::diff_rec(d.difficulty))
         .with("casting_time", raw())

@@ -10,6 +10,8 @@ pub struct Resolver {
     /// (table, sid) -> [(pack, priority)]
     map: BTreeMap<(String, String), Vec<(String, i64)>>,
     pub priorities: BTreeMap<String, i64>,
+    /// Имя школы (en из translation, в нижнем регистре) и код -> код ref_college.
+    pub colleges: BTreeMap<String, String>,
 }
 
 impl Resolver {
@@ -61,6 +63,18 @@ impl Resolver {
                 r.add(t, p, s, prio);
             }
         }
+        for (code, name) in super::export::college_names(db).await? {
+            r.colleges.insert(code.to_lowercase(), code.clone());
+            r.colleges.insert(name.to_lowercase(), code);
+        }
         Ok(r)
+    }
+
+    /// Код ref_college по имени из листа: сначала имя/код из БД, иначе slug имени.
+    pub fn college_code(&self, name: &str) -> String {
+        self.colleges
+            .get(&name.trim().to_lowercase())
+            .cloned()
+            .unwrap_or_else(|| crate::ids::slug(name))
     }
 }
