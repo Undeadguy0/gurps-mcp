@@ -1,6 +1,6 @@
 # gurps-mcp
 
-MCP-сервер (rmcp, stdio) для базы GURPS 4e в SurrealDB (схема `mcp-gurps/Data/database`).
+MCP-сервер (rmcp, stdio) для базы GURPS 4e в SurrealDB (схема `Data/database` этого репозитория).
 
 ## Запуск
 ```sh
@@ -47,4 +47,4 @@ SURREALDB_USER=root SURREALDB_PASSWORD=root cargo run --release
 
 ## Тесты
 `cargo test` поднимает `surreal start memory`, грузит схему и сиды из `GURPS_DB_DIR`
-(по умолчанию `../mcp-gurps/Data/database`); нет схемы или `surreal` — тесты с БД пропускаются.
+(по умолчанию `Data/database` в этом репозитории); нет схемы или `surreal` — тесты с БД пропускаются.

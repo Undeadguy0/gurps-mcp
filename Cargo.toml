@@ -1,3 +1,7 @@
+[workspace]
+members = [".", "tools/sheet-bridge"]
+resolver = "3"
+
 [package]
 name = "gurps-mcp"
 version = "0.1.0"

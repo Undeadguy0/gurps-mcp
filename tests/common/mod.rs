@@ -1,5 +1,5 @@
 //! Помощник тестов: `surreal start memory` на свободном порту + схема и сиды из Data/database.
-//! Каталог схемы: env GURPS_DB_DIR (по умолчанию ../mcp-gurps/Data/database). Нет схемы или surreal — тест пропускается.
+//! Каталог схемы: env GURPS_DB_DIR (по умолчанию Data/database этого репозитория). Нет схемы или surreal — тест пропускается.
 #![allow(dead_code)]
 
 use gurps_mcp::config::DbConfig;
@@ -23,7 +23,7 @@ pub fn db_dir() -> Option<PathBuf> {
     let p = std::env::var("GURPS_DB_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../mcp-gurps/Data/database")
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("Data/database")
         });
     p.join("schema").is_dir().then_some(p)
 }
