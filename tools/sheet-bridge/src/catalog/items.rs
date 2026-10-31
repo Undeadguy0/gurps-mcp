@@ -37,7 +37,18 @@ pub fn to_db(ctx: &mut Ctx, e: &EquipmentDef, sid: &str, weapons: &[&WeaponDef])
     let mut c = Sv::obj();
     if let Some(db) = stats.strip_prefix("DB ").and_then(|x| x.trim().parse::<i64>().ok()) {
         category = "shield";
-        c.set("shield", Sv::obj().with("db", Sv::Int(db)));
+        let mut sh = Sv::obj().with("db", Sv::Int(db));
+        // В листе навык блока не задан: щит блокируется навыком Shield (B358), если он известен.
+        match ctx.find("skill", "shield") {
+            Some(r) => {
+                sh.set("block_skill", Sv::obj().with("skill", Sv::Rec(r)));
+            }
+            None => ctx.gap(
+                "item.shield.block_skill: навык shield не найден, Block не вычисляется",
+                what.clone(),
+            ),
+        }
+        c.set("shield", sh);
     } else if let Some(dr) = stats.strip_prefix("DR ") {
         category = "armor";
         c.set("armor", Sv::obj().with("dr_raw", Sv::str(dr.trim())));

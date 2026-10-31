@@ -6,7 +6,7 @@ use crate::catalog::{export, import as cimport, items, modifiers, skills, spells
 use crate::db::Db;
 use crate::ids;
 use crate::report::{Dir, Report};
-use crate::sheet::{Character, Equipment, LedgerKind, NegativeRounding};
+use crate::sheet::{Character, Equipment, LedgerKind, NegativeRounding, WeaponDef};
 use crate::sql::{Rec, Sv};
 use serde_json::Value as J;
 use std::collections::BTreeMap;
@@ -128,52 +128,6 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
     }
 
     let mut edges = String::new();
-    // черты
-    for (i, t) in ch.traits.iter().enumerate() {
-        let sid = ids::kebab_to_sid(&t.def.id)?;
-        let what = format!("trait {}", t.def.id);
-        let rec = m
-            .place(
-                "trait",
-                &sid,
-                t.source.as_deref(),
-                &t.def,
-                traits::to_db,
-                |j, r, c| j_(traits::from_db(j, r, c)),
-                &what,
-            )
-            .await?;
-        let leveled = t.def.cost_per_level != 0;
-        if !leveled && t.levels != 0 {
-            m.report
-                .gap(Dir::Import, "trait.levels у черты без уровней: отброшено", what.clone());
-        }
-        let mut mods = Vec::new();
-        for md in &t.modifiers {
-            let msid = ids::kebab_to_sid(&md.def.id)?;
-            let mr = m
-                .place(
-                    "modifier",
-                    &msid,
-                    md.source.as_deref(),
-                    &md.def,
-                    modifiers::to_db,
-                    |j, r, _| j_(modifiers::from_db(j, r)),
-                    &format!("modifier {}", md.def.id),
-                )
-                .await?;
-            if md.explanation.is_some() {
-                m.report
-                    .gap(Dir::Import, "trait.modifiers[].explanation: в схеме нет", what.clone());
-            }
-            mods.push(Sv::obj().with("modifier", Sv::Rec(mr)));
-        }
-        let c = Sv::obj()
-            .with("level", if leveled { Sv::Int(t.levels as i64) } else { Sv::None })
-            .with("modifiers", Sv::Arr(mods))
-            .with("note", Sv::opt(t.explanation.clone().filter(|e| !e.trim().is_empty()), Sv::Str));
-        relate(&mut edges, "has_trait", id, i, &cref, &rec, c);
-    }
     // навыки
     for (i, s) in ch.skills.iter().enumerate() {
         let sid = ids::kebab_to_sid(&s.def.id)?;
@@ -252,6 +206,52 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
             with_note(Sv::obj().with("points", Sv::Int(s.points as i64)), &s.explanation),
         );
     }
+    // черты (после навыков: skill_bonus ссылается на custom-навыки)
+    for (i, t) in ch.traits.iter().enumerate() {
+        let sid = ids::kebab_to_sid(&t.def.id)?;
+        let what = format!("trait {}", t.def.id);
+        let rec = m
+            .place(
+                "trait",
+                &sid,
+                t.source.as_deref(),
+                &t.def,
+                traits::to_db,
+                |j, r, c| j_(traits::from_db(j, r, c)),
+                &what,
+            )
+            .await?;
+        let leveled = t.def.cost_per_level != 0;
+        if !leveled && t.levels != 0 {
+            m.report
+                .gap(Dir::Import, "trait.levels у черты без уровней: отброшено", what.clone());
+        }
+        let mut mods = Vec::new();
+        for md in &t.modifiers {
+            let msid = ids::kebab_to_sid(&md.def.id)?;
+            let mr = m
+                .place(
+                    "modifier",
+                    &msid,
+                    md.source.as_deref(),
+                    &md.def,
+                    modifiers::to_db,
+                    |j, r, _| j_(modifiers::from_db(j, r)),
+                    &format!("modifier {}", md.def.id),
+                )
+                .await?;
+            if md.explanation.is_some() {
+                m.report
+                    .gap(Dir::Import, "trait.modifiers[].explanation: в схеме нет", what.clone());
+            }
+            mods.push(Sv::obj().with("modifier", Sv::Rec(mr)));
+        }
+        let c = Sv::obj()
+            .with("level", if leveled { Sv::Int(t.levels as i64) } else { Sv::None })
+            .with("modifiers", Sv::Arr(mods))
+            .with("note", Sv::opt(t.explanation.clone().filter(|e| !e.trim().is_empty()), Sv::Str));
+        relate(&mut edges, "has_trait", id, i, &cref, &rec, c);
+    }
     // снаряжение (дерево)
     let mut items_sql = String::new();
     let mut stack: Vec<(Vec<i64>, &Equipment)> = ch.equipment.iter().enumerate().rev().map(|(i, e)| (vec![i as i64], e)).collect();
@@ -266,13 +266,19 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
         }
         let what = format!("equipment {}", e.def.name);
         let s2 = sid.clone();
+        let ws: Vec<WeaponDef> = ch
+            .weapons
+            .iter()
+            .filter(|w| !e.def.id.is_empty() && w.def.equipment.as_deref() == Some(e.def.id.as_str()))
+            .map(|w| w.def.clone())
+            .collect();
         let rec = m
             .place(
                 "item",
                 &sid,
                 e.source.as_deref(),
                 &e.def,
-                move |c, d| items::to_db(c, d, &s2, &[]),
+                move |c, d| items::to_db(c, d, &s2, &ws.iter().collect::<Vec<_>>()),
                 |j, r, _| j_(items::from_db(j, r).0),
                 &what,
             )
@@ -302,7 +308,7 @@ pub async fn plan(db: &Db, ch: &Character, id: &str, opts: &CharOpts, report: &m
     if !ch.weapons.is_empty() {
         m.report.gap(
             Dir::Import,
-            "weapons: снимок таблицы оружия не хранится (выводится из предметов)",
+            "weapons: снимок таблицы не хранится; атаки предметов (custom) взяты из него, натуральные — из каталога",
             format!("{} шт.", ch.weapons.len()),
         );
     }

@@ -1,11 +1,15 @@
 //! Сумма потраченных очков (атрибуты, черты с модификаторами, навыки, техники, заклинания) против журнала.
-use super::Missing;
 use super::model::{Input, OwnedTrait, Refs};
+use super::Missing;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq)]
 pub struct Points {
     pub attributes: i64,
+    /// Часть `attributes` за базовые (ref_attribute.kind = basic).
+    pub basic_attributes: i64,
+    /// Часть `attributes` за вторичные (ref_attribute.kind = secondary).
+    pub secondary_attributes: i64,
     pub advantages: i64,
     pub disadvantages: i64,
     pub skills: i64,
@@ -75,8 +79,16 @@ pub fn trait_cost(refs: &Refs, t: &OwnedTrait, miss: &mut Missing) -> i64 {
 pub fn compute(inp: &Input, miss: &mut Missing) -> Points {
     let mut p = Points::default();
     for a in &inp.attributes {
-        match inp.refs.attr(&a.code).and_then(|d| d.cost_per_level) {
-            Some(c) => p.attributes += a.levels * c,
+        let def = inp.refs.attr(&a.code);
+        match def.and_then(|d| d.cost_per_level) {
+            Some(c) => {
+                p.attributes += a.levels * c;
+                if def.is_some_and(|d| d.kind == "basic") {
+                    p.basic_attributes += a.levels * c;
+                } else {
+                    p.secondary_attributes += a.levels * c;
+                }
+            }
             None => miss.add(format!("ref_attribute:{}.cost_per_level", a.code)),
         }
     }
