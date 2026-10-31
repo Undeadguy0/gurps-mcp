@@ -38,7 +38,9 @@ pub fn query() -> String {
             refs: {REFS},
             attributes: $c.attributes.map(|$a| {{ code: record::id($a.attribute), levels: $a.levels }}),
             current_hp: $c.current_hp, current_fp: $c.current_fp,
-            carried_weight: math::sum((SELECT VALUE qty * (out.weight ?? 0) FROM owns_item WHERE in = $c)),
+            carried_weight: math::sum((SELECT VALUE qty * (out.weight ?? 0) FROM owns_item WHERE in = $c AND equipped
+                AND (contained_in IS NONE OR contained_in.equipped = true)
+                AND (contained_in.contained_in IS NONE OR contained_in.contained_in.equipped = true))),
             traits: (SELECT out.sid AS sid, level, out.cost AS cost,
                         modifiers.map(|$m| {{ type: $m.modifier.type, value_kind: $m.modifier.value.kind,
                             amount: $m.modifier.value.amount, levels: $m.levels ?? $m.modifier.levels }}) AS modifiers,
