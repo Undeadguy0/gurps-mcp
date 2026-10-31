@@ -94,3 +94,10 @@ kind = "sql_expect"
 actor = "root"
 sql = "CREATE ref_rule:t_dodge_attribute SET code = 't_dodge_attribute', text = 'Speed', pack = pack:basic; CREATE ref_rule:t_dodge_base SET code = 't_dodge_base', value = 1, pack = pack:basic RETURN AFTER;"
 allow = true
+
+[[cases]]
+name = "dodge_min_rule_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_rule:t_dodge_min SET code = 't_dodge_min', value = 1, pack = pack:basic, source_refs = [{ book: ref_book:B, page: 17 }], verified = true RETURN AFTER;"
+allow = true
