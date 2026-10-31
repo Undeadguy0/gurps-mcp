@@ -25,7 +25,8 @@ pub const REFS: &str = "{
     difficulties: (SELECT code, base_mod, technique_costs FROM ref_difficulty),
     skill_costs: (SELECT points, level_offset FROM ref_skill_cost),
     st_damage: (SELECT st, thr, sw FROM ref_st_damage),
-    rules: (SELECT code, value, text FROM ref_rule)
+    rules: (SELECT code, value, text FROM ref_rule),
+    encumbrance: (SELECT code, level, max_load_bl, move_mult, dodge_mod FROM ref_encumbrance ORDER BY level)
 }";
 
 pub fn query() -> String {
@@ -37,6 +38,7 @@ pub fn query() -> String {
             refs: {REFS},
             attributes: $c.attributes.map(|$a| {{ code: record::id($a.attribute), levels: $a.levels }}),
             current_hp: $c.current_hp, current_fp: $c.current_fp,
+            carried_weight: math::sum((SELECT VALUE qty * (out.weight ?? 0) FROM owns_item WHERE in = $c)),
             traits: (SELECT out.sid AS sid, level, out.cost AS cost,
                         modifiers.map(|$m| {{ type: $m.modifier.type, value_kind: $m.modifier.value.kind,
                             amount: $m.modifier.value.amount, levels: $m.levels ?? $m.modifier.levels }}) AS modifiers,

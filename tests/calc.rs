@@ -98,7 +98,7 @@ fn hero() -> Input {
         "ledger": [ { "kind": "award", "delta": 100 }, { "kind": "spend", "delta": -50 } ]
     }))
     .map(|mut i: Input| {
-        i.refs = refs();
+        i.refs = enc_refs();
         i
     })
     .unwrap()
@@ -194,4 +194,77 @@ fn missing_constants_reported() {
         assert!(m.contains(c), "{c}: {m:?}");
     }
     assert_eq!(r.attributes.thrust, None);
+}
+
+fn enc_refs() -> Refs {
+    let mut r = refs();
+    let more: Refs = serde_json::from_value(json!({
+        "rules": [
+            { "code": "dodge_attribute", "text": "Speed" }, { "code": "dodge_base", "value": 3 },
+            { "code": "dodge_min", "value": 1 }, { "code": "encumbrance_move_min", "value": 1 },
+            { "code": "move_attribute", "text": "Move" }
+        ],
+        "encumbrance": [
+            { "code": "heavy", "level": 2, "max_load_bl": 6, "move_mult": 0.4, "dodge_mod": -2 },
+            { "code": "none", "level": 0, "max_load_bl": 1, "move_mult": 1, "dodge_mod": 0 },
+            { "code": "light", "level": 1, "max_load_bl": 2, "move_mult": 0.8, "dodge_mod": -1 }
+        ]
+    }))
+    .unwrap();
+    r.rules.extend(more.rules);
+    r.encumbrance = more.encumbrance;
+    r
+}
+
+#[test]
+fn encumbrance_levels_inclusive_and_overload() {
+    let r = enc_refs();
+    let lv = |w| calc::encumbrance::level_for(&r, w, 20.0).map(|(x, o)| (x.level, o));
+    assert_eq!(lv(0.0), Some((0, false)));
+    assert_eq!(lv(20.0), Some((0, false)));
+    assert_eq!(lv(20.5), Some((1, false)));
+    assert_eq!(lv(120.0), Some((2, false)));
+    assert_eq!(lv(120.5), Some((2, true)));
+}
+
+#[test]
+fn encumbrance_move_and_dodge_minimums() {
+    let r = enc_refs();
+    let mut m = Missing::default();
+    let heavy = &r.encumbrance[0];
+    assert_eq!(calc::encumbrance::move_for(&r, 7.0, heavy, &mut m), 2);
+    assert_eq!(
+        calc::encumbrance::move_for(&r, 2.0, heavy, &mut m),
+        1,
+        "минимум"
+    );
+    assert_eq!(calc::encumbrance::move_for(&r, 0.0, heavy, &mut m), 0);
+    assert_eq!(calc::encumbrance::dodge_for(&r, 8, heavy, &mut m), 6);
+    assert_eq!(
+        calc::encumbrance::dodge_for(&r, 2, heavy, &mut m),
+        1,
+        "минимум"
+    );
+    assert!(m.0.is_empty(), "{:?}", m.0);
+}
+
+#[test]
+fn encumbrance_and_defenses_in_compute() {
+    let inp: Input = serde_json::from_value(json!({ "carried_weight": 30 })).unwrap();
+    let inp = Input {
+        refs: enc_refs(),
+        ..inp
+    };
+    let c = calc::compute(&inp);
+    let e = &c.encumbrance;
+    // ST 10: BL 20; Speed 5, Move 5, Dodge 8
+    assert_eq!((e.level, e.overloaded), (Some(1), false));
+    assert_eq!(
+        (e.base_dodge, e.dodge, e.move_value),
+        (Some(8), Some(7), Some(4))
+    );
+    assert_eq!(e.table.len(), 3);
+    assert_eq!(e.table[2].max_weight, Some(120.0));
+    assert_eq!(c.defenses.dodge, Some(7));
+    assert_eq!(c.defenses.parry, None);
 }

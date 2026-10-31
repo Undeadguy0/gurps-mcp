@@ -36,7 +36,14 @@ fn surrealkit(dir: &Path, cfg: &DbConfig, cmd: &str) -> Result<(), String> {
     let out = Command::new(bin("SURREALKIT_BIN", "surrealkit"))
         .current_dir(folder)
         .arg(cmd)
-        .args(["--host", &cfg.host, "--ns", &cfg.namespace, "--db", &cfg.database])
+        .args([
+            "--host",
+            &cfg.host,
+            "--ns",
+            &cfg.namespace,
+            "--db",
+            &cfg.database,
+        ])
         .args(["--user", &cfg.user, "--pass", &cfg.password])
         .args(["--folder", &dir.display().to_string()])
         .output()
@@ -64,7 +71,9 @@ pub async fn start() -> Option<(Server, Db)> {
         .ok()?
         .port();
     let child = match Command::new(bin("SURREAL_BIN", "surreal"))
-        .args(["start", "memory", "--user", "root", "--pass", "root", "--log", "error"])
+        .args([
+            "start", "memory", "--user", "root", "--pass", "root", "--log", "error",
+        ])
         .args(["--bind", &format!("127.0.0.1:{port}")])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -83,7 +92,10 @@ pub async fn start() -> Option<(Server, Db)> {
         user: "root".into(),
         password: "root".into(),
     };
-    let server = Server { child, cfg: cfg.clone() };
+    let server = Server {
+        child,
+        cfg: cfg.clone(),
+    };
     let mut db = None;
     for _ in 0..100 {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -99,7 +111,10 @@ pub async fn start() -> Option<(Server, Db)> {
     };
     for cmd in ["sync", "seed"] {
         if let Err(e) = surrealkit(&dir, &kit_cfg, cmd) {
-            if e.contains("program not found") || e.contains("cannot find") || e.contains("os error 2") {
+            if e.contains("program not found")
+                || e.contains("cannot find")
+                || e.contains("os error 2")
+            {
                 eprintln!("{e}; пропуск");
                 return None;
             }

@@ -3,6 +3,7 @@
 //! Загрузчик (`gurps_mcp::calc::loader`, в сервере) собирает [`model::Input`] одним запросом; остальные модули — чистый Rust.
 pub mod attacks;
 pub mod attributes;
+pub mod encumbrance;
 pub mod features;
 pub mod model;
 pub mod points;
@@ -51,6 +52,8 @@ pub struct Computed {
     pub attacks: Vec<attacks::Attack>,
     pub points: points::Points,
     pub prereq_violations: Vec<prereq::Violation>,
+    pub encumbrance: encumbrance::Encumbrance,
+    pub defenses: encumbrance::Defenses,
     /// Константы, которых нет в справочниках: расчёт по ним пропущен.
     pub missing_constants: Missing,
 }
@@ -61,6 +64,8 @@ pub fn compute(inp: &Input) -> Computed {
     let attrs = attributes::compute(inp, &fx, &mut miss);
     let sk = skills::Skills::compute(inp, &attrs, &fx, &mut miss);
     let attacks = attacks::compute(inp, &attrs, &sk, &fx, &mut miss);
+    let enc = encumbrance::compute(inp, &attrs, &mut miss);
+    let defenses = encumbrance::defenses(&enc, &attacks, &fx);
     let points = points::compute(inp, &mut miss);
     let ctx = prereq::Ctx::new(inp, &attrs, &sk, &mut miss);
     let prereq_violations = prereq::check_all(inp, &ctx);
@@ -72,6 +77,8 @@ pub fn compute(inp: &Input) -> Computed {
         attacks,
         points,
         prereq_violations,
+        encumbrance: enc,
+        defenses,
         missing_constants: miss,
     }
 }

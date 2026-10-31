@@ -53,7 +53,10 @@ fn split_record(s: &str) -> Option<(&str, &str)> {
 
 fn unquote(s: &str) -> &str {
     let s = s.trim();
-    let s = s.strip_prefix('⟨').and_then(|x| x.strip_suffix('⟩')).unwrap_or(s);
+    let s = s
+        .strip_prefix('⟨')
+        .and_then(|x| x.strip_suffix('⟩'))
+        .unwrap_or(s);
     s.trim_matches(|c| c == '\'' || c == '"' || c == '`')
 }
 
@@ -72,7 +75,10 @@ pub fn record_code(s: &str) -> Option<&str> {
 }
 
 fn check_ident(what: &str, s: &str) -> DbResult<()> {
-    if !s.is_empty() && s.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_') {
+    if !s.is_empty()
+        && s.chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+    {
         Ok(())
     } else {
         Err(DbError::Invalid(format!("{what}: {s:?}")))
@@ -93,7 +99,11 @@ pub struct Pack {
 
 /// Паки по возрастанию приоритета (последний перекрывает предыдущие). `custom` — по флагу.
 pub async fn packs(db: &Db, include_custom: bool) -> DbResult<Vec<Pack>> {
-    let filter = if include_custom { "true" } else { "kind != 'custom'" };
+    let filter = if include_custom {
+        "true"
+    } else {
+        "kind != 'custom'"
+    };
     let v = db
         .one(
             &format!(
@@ -186,7 +196,12 @@ impl Entry {
             .transpose()
             .map_err(|e| DbError::Decode(format!("{table} {id}: _tr: {e}")))?
             .unwrap_or_default();
-        Ok(Self { table, id, tr, data })
+        Ok(Self {
+            table,
+            id,
+            tr,
+            data,
+        })
     }
 
     /// Текст поля перевода: `lang`, иначе `en`.
@@ -199,7 +214,10 @@ impl Entry {
 
     /// Код ссылки на справочник в поле `field` (`ref_attribute:DX` -> "DX").
     pub fn ref_code(&self, field: &str) -> Option<&str> {
-        self.data.get(field).and_then(J::as_str).and_then(record_code)
+        self.data
+            .get(field)
+            .and_then(J::as_str)
+            .and_then(record_code)
     }
 }
 
@@ -223,12 +241,19 @@ impl Catalog {
             let r = fetch_pack(db, &p.code).await?;
             for (t, js) in &r {
                 for j in js {
-                    entries.entry(t).or_default().push(Entry::from_assembled(t, j.clone())?);
+                    entries
+                        .entry(t)
+                        .or_default()
+                        .push(Entry::from_assembled(t, j.clone())?);
                 }
             }
             rows.insert(p.code.clone(), r);
         }
-        Ok(Self { packs, entries, rows })
+        Ok(Self {
+            packs,
+            entries,
+            rows,
+        })
     }
 
     pub fn table(&self, table: &str) -> &[Entry] {
@@ -240,7 +265,10 @@ impl Catalog {
     }
 
     fn priority(&self, pack: &str) -> i64 {
-        self.packs.iter().find(|p| p.code == pack).map_or(i64::MIN, |p| p.priority)
+        self.packs
+            .iter()
+            .find(|p| p.code == pack)
+            .map_or(i64::MIN, |p| p.priority)
     }
 
     /// Действующая запись по sid — из пака с наибольшим priority (как `fn::effective`).
@@ -311,7 +339,10 @@ mod tests {
     #[test]
     fn record_parsing() {
         let (t, id) = parse_catalog_record("skill:['basic', 'sword_a']").unwrap();
-        assert_eq!((t, id.pack.as_str(), id.sid.as_str()), ("skill", "basic", "sword_a"));
+        assert_eq!(
+            (t, id.pack.as_str(), id.sid.as_str()),
+            ("skill", "basic", "sword_a")
+        );
         assert_eq!(record_code("ref_attribute:DX"), Some("DX"));
         assert_eq!(record_code("pack:⟨basic⟩"), Some("basic"));
         assert_eq!(record_code("skill:['a', 'b']"), None);

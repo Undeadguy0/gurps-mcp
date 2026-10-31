@@ -10,3 +10,4 @@ UPSERT ref_rule:dodge_base SET code = 'dodge_base', value = 3, pack = pack:basic
 UPSERT ref_rule:encumbrance_move_min SET code = 'encumbrance_move_min', value = 1, pack = pack:basic, source_refs = [{ book: ref_book:B, page: 17 }], verified = true,
 	note = 'нагрузка не снижает Move ниже 1; тот же минимум 1 для Dodge — ref_rule:dodge_min';
 UPSERT ref_rule:dodge_min SET code = 'dodge_min', value = 1, pack = pack:basic, source_refs = [{ book: ref_book:B, page: 17 }], verified = true, note = 'нагрузка не снижает Dodge ниже 1';
+UPSERT ref_rule:move_attribute SET code = 'move_attribute', text = 'Move', pack = pack:basic, source_refs = [{ book: ref_book:B, page: 17 }], verified = true, note = 'нагрузка умножает Basic Move; код ref_attribute:Move';

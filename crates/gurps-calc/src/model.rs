@@ -51,6 +51,16 @@ pub struct StDamageRow {
     pub sw: Dice,
 }
 
+/// Уровень нагрузки (`ref_encumbrance`).
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct EncumbranceRow {
+    pub code: String,
+    pub level: i64,
+    pub max_load_bl: f64,
+    pub move_mult: f64,
+    pub dodge_mod: i64,
+}
+
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct RuleRow {
     pub code: String,
@@ -73,6 +83,8 @@ pub struct Refs {
     pub st_damage: Vec<StDamageRow>,
     #[serde(default)]
     pub rules: Vec<RuleRow>,
+    #[serde(default)]
+    pub encumbrance: Vec<EncumbranceRow>,
 }
 
 impl Refs {
@@ -280,6 +292,9 @@ pub struct Input {
     pub current_hp: Option<i64>,
     #[serde(default)]
     pub current_fp: Option<i64>,
+    /// Переносимый вес (для нагрузки), в единицах веса справочника.
+    #[serde(default)]
+    pub carried_weight: Option<f64>,
     #[serde(default)]
     pub traits: Vec<OwnedTrait>,
     #[serde(default)]

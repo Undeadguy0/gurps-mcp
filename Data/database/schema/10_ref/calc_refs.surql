@@ -16,6 +16,7 @@
 --   dodge_base                — прибавка к dodge_attribute (Dodge = floor(атрибут) + dodge_base)
 --   encumbrance_move_min      — нижняя граница Move под нагрузкой (если Basic Move > 0)
 --   dodge_min                 — нижняя граница Dodge под нагрузкой (B17)
+--   move_attribute (text)     — код ref_attribute, который умножается на move_mult нагрузки
 --   уровни нагрузки — таблица ref_encumbrance (schema/10_ref/encumbrance.surql)
 DEFINE TABLE OVERWRITE ref_rule SCHEMAFULL;
 -- Общие поля справочника: id = code (например ref_rule:parry_base); названия — в translation.
