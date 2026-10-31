@@ -2,8 +2,8 @@
 use crate::config::DbConfig;
 use crate::error::{DbError, DbResult};
 use serde_json::Value as J;
-use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
+use surrealdb::Surreal;
 
 #[derive(Clone)]
 pub struct Db {
@@ -70,5 +70,21 @@ impl Db {
     /// Результат последнего оператора.
     pub async fn one(&self, sql: &str, vars: Vars) -> DbResult<J> {
         Ok(self.query(sql, vars).await?.pop().unwrap_or(J::Null))
+    }
+    /// Один запрос с JSON-параметром `key` (последний результат).
+    pub async fn one_json(&self, sql: &str, key: &'static str, v: J) -> DbResult<J> {
+        let mut resp = self.conn.query(sql).bind((key, v)).await?;
+        let errs = resp.take_errors();
+        if !errs.is_empty() {
+            let msg = errs
+                .into_values()
+                .map(|e| e.to_string())
+                .collect::<Vec<_>>()
+                .join("; ");
+            return Err(DbError::Query(msg));
+        }
+        let n = resp.num_statements();
+        let v: surrealdb::types::Value = resp.take(n - 1)?;
+        Ok(v.into_json_value())
     }
 }
