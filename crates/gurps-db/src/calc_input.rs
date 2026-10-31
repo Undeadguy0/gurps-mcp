@@ -46,6 +46,8 @@ struct Src {
     idx: &'static str,
     /// Доп. поля результата (только документ).
     extra: &'static str,
+    /// Предмет при себе с учётом контейнеров.
+    equipped: &'static str,
 }
 
 const DB_SRC: Src = Src {
@@ -64,6 +66,8 @@ const DB_SRC: Src = Src {
     overrides: "[]",
     idx: "",
     extra: "",
+    equipped: "(equipped AND (contained_in IS NONE OR contained_in.equipped = true)
+        AND (contained_in.contained_in IS NONE OR contained_in.contained_in.equipped = true)) AS equipped",
 };
 
 /// Документ: `{ attributes: [{code, levels}], current_hp?, current_fp?,
@@ -109,6 +113,7 @@ const DOC_SRC: Src = Src {
     overrides: "($ch.rule_overrides ?? [])",
     idx: "i,",
     extra: ", doc_modifiers: $md",
+    equipped: "equipped",
 };
 
 fn build(s: &Src) -> String {
@@ -128,6 +133,7 @@ fn build(s: &Src) -> String {
         overrides,
         idx,
         extra,
+        equipped,
     } = s;
     let guard = if std::ptr::eq(s, &DB_SRC) {
         "!record::exists($c)"
@@ -141,7 +147,7 @@ fn build(s: &Src) -> String {
             attributes: {attributes},
             {current}
             carried_weight: {carried},
-            traits: (SELECT {idx} out.sid AS sid, level, out.cost AS cost,
+            traits: (SELECT {idx} out.sid AS sid, out.kind AS kind, level, out.cost AS cost,
                         modifiers.map(|$m| {{ type: $m.modifier.type, value_kind: $m.modifier.value.kind,
                             amount: $m.modifier.value.amount, levels: $m.levels ?? $m.modifier.levels }}) AS modifiers,
                         out.features AS features, out.prereqs AS prereqs
@@ -157,7 +163,9 @@ fn build(s: &Src) -> String {
             spells: (SELECT {idx} out.sid AS sid, out.colleges.map(|$x| record::id($x)) AS colleges,
                         record::id(out.difficulty) AS difficulty, points, out.prereqs AS prereqs
                      FROM {spells}),
-            items: (SELECT {idx} out.sid AS sid, equipped, out.features AS features,
+            items: (SELECT {idx} out.sid AS sid, {equipped}, qty, out.weight AS weight, out.cost AS cost,
+                        (out.armor.locations ?? []).map(|$l| {{ loc: record::id($l.loc), dr: $l.dr }}) AS armor,
+                        out.features AS features,
                         IF out.shield {{ {{ db: out.shield.db, block_skill: out.shield.block_skill.skill.sid,
                             block_spec: out.shield.block_skill.spec }} }} ELSE {{ NONE }} AS shield,
                         (out.attack_modes ?? []).map(|$m| {item}) AS attack_modes

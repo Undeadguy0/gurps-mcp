@@ -4,6 +4,7 @@
 pub mod attacks;
 pub mod attributes;
 pub mod encumbrance;
+pub mod equipment;
 pub mod features;
 pub mod model;
 pub mod points;
@@ -57,6 +58,7 @@ pub struct Computed {
     pub prereq_violations: Vec<prereq::Violation>,
     pub encumbrance: encumbrance::Encumbrance,
     pub defenses: encumbrance::Defenses,
+    pub equipment: equipment::Equipment,
     /// Константы, которых нет в справочниках: расчёт по ним пропущен.
     pub missing_constants: Missing,
 }
@@ -88,6 +90,7 @@ pub fn compute(inp: &Input) -> Computed {
         prereq_violations,
         encumbrance: enc,
         defenses,
+        equipment: equipment::compute(inp),
         missing_constants: miss,
     }
 }

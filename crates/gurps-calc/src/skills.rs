@@ -17,6 +17,16 @@ pub struct SkillLevel {
     pub relative: Option<i64>,
     /// Откуда уровень: `points` | `default:<attr|skill>` | `technique`.
     pub source: String,
+    /// Техники: предельный уровень (родитель + max_mod).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_level: Option<i64>,
+}
+
+impl SkillLevel {
+    /// Уровень взят по умолчанию (не куплен очками).
+    pub fn is_default(&self) -> bool {
+        self.source.starts_with("default")
+    }
 }
 
 /// Прибавка к уровню за очки по таблице ref_skill_cost (+ правило сверх таблицы).
@@ -163,6 +173,7 @@ impl Skills {
                     .map(|(l, a)| l - a.floor() as i64),
                 level,
                 source,
+                max_level: None,
             });
         }
         // навыки каталога без очков (для атак и техник): только по умолчанию
@@ -179,6 +190,7 @@ impl Skills {
                     relative: attrs.get(&c.attribute).map(|a| level - a.floor() as i64),
                     level: Some(level),
                     source: src,
+                    max_level: None,
                 });
             }
         }
@@ -204,6 +216,7 @@ impl Skills {
                 relative: level.zip(parent).map(|(l, p)| l - p),
                 level,
                 source: "technique".into(),
+                max_level: parent.zip(t.max_mod).map(|(p, m)| p + m),
             });
         }
         // 4. заклинания: атрибут из ref_rule:spell_attribute + сложность + очки + spell_bonus
@@ -224,6 +237,7 @@ impl Skills {
                 relative: level.zip(a).map(|(l, a)| l - a),
                 level,
                 source: "points".into(),
+                max_level: None,
             });
         }
         out

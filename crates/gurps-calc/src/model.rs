@@ -22,6 +22,18 @@ fn one() -> f64 {
     1.0
 }
 
+fn one_i() -> i64 {
+    1
+}
+
+/// DR брони по зоне (`ref_hit_location`).
+#[derive(Debug, Clone, Default, Deserialize, serde::Serialize, PartialEq)]
+pub struct ArmorLoc {
+    pub loc: String,
+    #[serde(default)]
+    pub dr: Option<i64>,
+}
+
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct DiffDef {
     pub code: String,
@@ -148,6 +160,9 @@ pub struct ModVal {
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct OwnedTrait {
     pub sid: String,
+    /// `adv` | `disadv` | `perk` | `quirk` (trait.kind).
+    #[serde(default)]
+    pub kind: Option<String>,
     #[serde(default)]
     pub level: Option<i64>,
     pub cost: TraitCost,
@@ -289,6 +304,15 @@ pub struct OwnedItem {
     pub sid: String,
     #[serde(default)]
     pub equipped: bool,
+    #[serde(default = "one_i")]
+    pub qty: i64,
+    #[serde(default)]
+    pub weight: Option<f64>,
+    #[serde(default)]
+    pub cost: Option<f64>,
+    /// Броня: DR по зонам.
+    #[serde(default)]
+    pub armor: Vec<ArmorLoc>,
     #[serde(default)]
     pub shield: Option<ShieldDef>,
     #[serde(default)]

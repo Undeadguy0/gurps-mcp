@@ -12,6 +12,12 @@ pub struct Points {
     pub secondary_attributes: i64,
     pub advantages: i64,
     pub disadvantages: i64,
+    /// Часть `advantages` за перки (trait.kind = perk).
+    pub perks: i64,
+    /// Часть `disadvantages` за причуды (trait.kind = quirk).
+    pub quirks: i64,
+    /// Число причуд.
+    pub quirk_count: i64,
     pub skills: i64,
     pub techniques: i64,
     pub spells: i64,
@@ -98,6 +104,14 @@ pub fn compute(inp: &Input, miss: &mut Missing) -> Points {
             p.advantages += c;
         } else {
             p.disadvantages += c;
+        }
+        match t.kind.as_deref() {
+            Some("perk") => p.perks += c,
+            Some("quirk") => {
+                p.quirks += c;
+                p.quirk_count += 1;
+            }
+            _ => {}
         }
     }
     p.skills = inp.skills.iter().map(|s| s.points).sum();

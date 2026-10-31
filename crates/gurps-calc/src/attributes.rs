@@ -18,6 +18,28 @@ pub struct Derived {
     pub current_fp: Option<i64>,
     /// Бонусы к защитам из эффектов: dodge/parry/block.
     pub defense_bonus: BTreeMap<String, i64>,
+    /// Строки атрибутов в порядке справочника: из чего сложилось значение и цена шага.
+    pub rows: Vec<AttrRow>,
+}
+
+/// Атрибут листа: значение = база + купленные шаги × шаг + эффекты (или `set`).
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct AttrRow {
+    pub code: String,
+    /// `basic` | `secondary`.
+    pub kind: String,
+    /// Купленные шаги.
+    pub levels: i64,
+    pub step: f64,
+    /// Очков за шаг (None — не покупается / нет в справочнике).
+    pub cost_per_level: Option<i64>,
+    pub points: i64,
+    pub base: f64,
+    /// Сумма эффектов (черты, навыки, предметы).
+    pub bonus: f64,
+    /// Значение задано эффектом (`op: set`).
+    pub set: bool,
+    pub value: f64,
 }
 
 impl Derived {
@@ -105,7 +127,34 @@ pub fn compute(inp: &Input, fx: &Effects, miss: &mut Missing) -> Derived {
         .iter()
         .map(|d| (d.to_string(), fx.defense(d)))
         .collect();
+    let rows = inp
+        .refs
+        .attributes
+        .iter()
+        .filter_map(|a| {
+            let value = *values.get(&a.code)?;
+            let lv = levels.get(&a.code).copied().unwrap_or(0);
+            let (add, set) = fx.attribute(&a.code);
+            Some(AttrRow {
+                code: a.code.clone(),
+                kind: a.kind.clone(),
+                levels: lv,
+                step: a.step,
+                cost_per_level: a.cost_per_level,
+                points: lv * a.cost_per_level.unwrap_or(0),
+                base: if set.is_some() {
+                    value
+                } else {
+                    value - lv as f64 * a.step - add
+                },
+                bonus: if set.is_some() { 0.0 } else { add },
+                set: set.is_some(),
+                value,
+            })
+        })
+        .collect();
     Derived {
+        rows,
         values,
         basic_lift,
         lifting_st,
