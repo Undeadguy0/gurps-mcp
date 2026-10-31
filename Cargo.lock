@@ -774,11 +774,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "gurps-db"
+version = "0.1.0"
+dependencies = [
+ "gurps-calc",
+ "serde",
+ "serde_json",
+ "surrealdb",
+ "thiserror 2.0.21",
+ "tokio",
+]
+
+[[package]]
 name = "gurps-mcp"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "gurps-calc",
+ "gurps-db",
  "rmcp",
  "schemars",
  "serde",
@@ -2059,6 +2072,7 @@ dependencies = [
  "anyhow",
  "clap",
  "fluent-syntax",
+ "gurps-db",
  "serde",
  "serde_json",
  "surrealdb",

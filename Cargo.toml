@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crates/gurps-calc", "tools/sheet-bridge"]
+members = [".", "crates/gurps-calc", "crates/gurps-db", "tools/sheet-bridge"]
 resolver = "3"
 
 [package]
@@ -9,6 +9,7 @@ edition = "2024"
 
 [dependencies]
 gurps-calc = { path = "crates/gurps-calc" }
+gurps-db = { path = "crates/gurps-db" }
 rmcp = { version = "3.8.0", features = ["server", "transport-io", "macros"] }
 schemars = "1.2.3"
 serde = { version = "1.0.229", features = ["derive"] }
@@ -19,3 +20,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
 thiserror = "2"
+
+[dev-dependencies]
+gurps-db = { path = "crates/gurps-db", features = ["testkit"] }

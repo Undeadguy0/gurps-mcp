@@ -9,4 +9,5 @@ pub async fn list_packs(db: &Db) -> ToolResult<J> {
         vec![],
     )
     .await
+    .map_err(Into::into)
 }

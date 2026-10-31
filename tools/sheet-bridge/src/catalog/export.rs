@@ -12,31 +12,8 @@ use serde_json::Value as J;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
-/// Запрос «собранных» записей таблицы (см. catalog/mod.rs) с фильтром.
-pub fn assembled_query(table: &str, filter: &str) -> String {
-    format!(
-        "SELECT *, \
-         (SELECT lang, field, text FROM translation WHERE record = $parent.id) AS _trl, \
-         (SELECT attribute, mod FROM attr_default WHERE skill = $parent.id ORDER BY attribute) AS _attr_defaults, \
-         (SELECT out, mod, any_spec, spec, from_spec, cap FROM defaults_to WHERE in = $parent.id ORDER BY out) AS _defaults_to \
-         FROM {table} WHERE {filter} ORDER BY sid;"
-    )
-}
-
-/// `_trl` (список) -> `_tr` (lang -> field -> text).
-pub fn fold_tr(mut j: J) -> J {
-    let mut m: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
-    for t in jsonx::arr(&j, "_trl") {
-        if let (Some(l), Some(f), Some(x)) = (jsonx::s(t, "lang"), jsonx::s(t, "field"), jsonx::s(t, "text")) {
-            m.entry(l.into()).or_default().insert(f.into(), x.into());
-        }
-    }
-    if let Some(o) = j.as_object_mut() {
-        o.remove("_trl");
-        o.insert("_tr".into(), serde_json::to_value(m).unwrap());
-    }
-    j
-}
+/// Запрос «собранных» записей и свёртка переводов — общие с gurps-db (одна форма для MCP, моста и листа).
+pub use gurps_db::catalog::{assembled_query, fold_tr};
 
 pub async fn fetch(db: &Db, table: &str, filter: &str) -> anyhow::Result<Vec<J>> {
     let v = db.one(&assembled_query(table, filter)).await?;

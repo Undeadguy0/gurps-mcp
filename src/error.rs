@@ -17,6 +17,16 @@ impl From<surrealdb::Error> for ToolError {
     }
 }
 
+impl From<gurps_db::DbError> for ToolError {
+    fn from(e: gurps_db::DbError) -> Self {
+        match e {
+            gurps_db::DbError::NotFound(m) => ToolError::NotFound(m),
+            gurps_db::DbError::Invalid(m) => ToolError::InvalidParams(m),
+            e => ToolError::Db(e.to_string()),
+        }
+    }
+}
+
 impl From<ToolError> for ErrorData {
     fn from(e: ToolError) -> Self {
         match e {
