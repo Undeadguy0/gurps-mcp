@@ -1,0 +1,96 @@
+# Структура справочника нагрузки ref_encumbrance и правил Dodge в ref_rule (значения — заглушки теста, не GURPS).
+name = "encumbrance"
+tags = ["calc", "encumbrance"]
+
+[[cases]]
+name = "enc_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e0 SET code = 't_e0', level = 90, max_load_bl = 1, move_mult = 1, dodge_mod = 0, pack = pack:basic RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "enc_name_translation_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e10 SET code = 't_e10', level = 80, max_load_bl = 1, move_mult = 1, dodge_mod = 0, pack = pack:basic; CREATE translation SET record = ref_encumbrance:t_e10, lang = 'ru', field = 'name', text = 'тест' RETURN AFTER;"
+allow = true
+
+[[cases]]
+name = "enc_dup_level_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e11 SET code = 't_e11', level = 81, max_load_bl = 1, move_mult = 1, dodge_mod = 0, pack = pack:basic; CREATE ref_encumbrance:t_e1 SET code = 't_e1', level = 81, max_load_bl = 2, move_mult = 1, dodge_mod = 0, pack = pack:basic;"
+allow = false
+error_contains = "ref_encumbrance_level"
+
+[[cases]]
+name = "enc_negative_level_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e2 SET code = 't_e2', level = -1, max_load_bl = 1, move_mult = 1, dodge_mod = 0, pack = pack:basic;"
+allow = false
+error_contains = "level"
+
+[[cases]]
+name = "enc_zero_load_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e3 SET code = 't_e3', level = 91, max_load_bl = 0, move_mult = 1, dodge_mod = 0, pack = pack:basic;"
+allow = false
+error_contains = "max_load_bl"
+
+[[cases]]
+name = "enc_move_mult_over_one_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e4 SET code = 't_e4', level = 92, max_load_bl = 1, move_mult = 1.5, dodge_mod = 0, pack = pack:basic;"
+allow = false
+error_contains = "move_mult"
+
+[[cases]]
+name = "enc_move_mult_zero_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e5 SET code = 't_e5', level = 93, max_load_bl = 1, move_mult = 0, dodge_mod = 0, pack = pack:basic;"
+allow = false
+error_contains = "move_mult"
+
+[[cases]]
+name = "enc_positive_dodge_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e6 SET code = 't_e6', level = 94, max_load_bl = 1, move_mult = 1, dodge_mod = 1, pack = pack:basic;"
+allow = false
+error_contains = "dodge_mod"
+
+[[cases]]
+name = "enc_missing_fields_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e7 SET code = 't_e7', pack = pack:basic;"
+allow = false
+error_contains = "ref_encumbrance"
+
+[[cases]]
+name = "enc_code_mismatch_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e8 SET code = 'other', level = 95, max_load_bl = 1, move_mult = 1, dodge_mod = 0, pack = pack:basic;"
+allow = false
+error_contains = "code"
+
+[[cases]]
+name = "enc_unknown_book_rejected"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_encumbrance:t_e9 SET code = 't_e9', level = 96, max_load_bl = 1, move_mult = 1, dodge_mod = 0, pack = pack:basic, source_refs = [{ book: ref_book:nope, page: 1 }];"
+allow = false
+error_contains = "book"
+
+[[cases]]
+name = "dodge_rules_shape_ok"
+kind = "sql_expect"
+actor = "root"
+sql = "CREATE ref_rule:t_dodge_attribute SET code = 't_dodge_attribute', text = 'Speed', pack = pack:basic; CREATE ref_rule:t_dodge_base SET code = 't_dodge_base', value = 1, pack = pack:basic RETURN AFTER;"
+allow = true

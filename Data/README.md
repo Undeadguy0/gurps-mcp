@@ -18,7 +18,7 @@ Data/
     │   ├── 30_relations/    # defaults_to, attr_default, excludes, alternative_of
     │   └── 40_character/    # character, рёбра has_*/owns_item, point_ledger
     ├── seed/                # сиды-ЗАГЛУШКИ (verified = false), не данные GURPS
-    ├── tests/suites/        # smoke, ref_integrity, translation, prereq, spells, features, attack, character, calc_refs
+    ├── tests/suites/        # smoke, ref_integrity, translation, prereq, spells, features, attack, character, calc_refs, encumbrance
     └── setup.surql          # служебные таблицы SurrealKit
 ```
 
