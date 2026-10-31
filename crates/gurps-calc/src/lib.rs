@@ -19,11 +19,14 @@ use std::collections::BTreeSet;
 /// Ключ записи из JSON-строки ссылки: `skill:['basic', 'x']` -> `x`, `ref_attribute:DX` -> `DX`.
 pub fn key(v: &J) -> Option<String> {
     let s = v.as_str()?;
-    let (_, rest) = s.split_once(':')?;
     let clean = |x: &str| {
         x.trim()
             .trim_matches(|c| matches!(c, '\'' | '"' | '`' | '⟨' | '⟩'))
             .to_string()
+    };
+    // Готовый ключ (встроенные определения листа): sid/code без таблицы.
+    let Some((_, rest)) = s.split_once(':') else {
+        return Some(clean(s));
     };
     if let Some(inner) = rest.strip_prefix('[').and_then(|r| r.strip_suffix(']')) {
         inner.rsplit(',').next().map(clean)
