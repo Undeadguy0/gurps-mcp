@@ -4,3 +4,5 @@ history.txt
 /target/
 target/
 .idea/
+# Каталог от `surrealkit init` в корне (локальные данные, не схема проекта: схема — в Data/database)
+/database/
