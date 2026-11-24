@@ -3,7 +3,7 @@ name = "sheet-bridge"
 version = "0.1.0"
 edition = "2021"
 description = "Конвертер gurps-sheet (TOML/.ftl/.gurps.json) <-> SurrealDB (схема Data/database)"
-license = "MIT OR Apache-2.0"
+license = "GPL-3.0-only"
 publish = false
 
 [dependencies]

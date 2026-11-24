@@ -6,6 +6,7 @@ resolver = "3"
 name = "gurps-mcp"
 version = "0.1.0"
 edition = "2024"
+license = "GPL-3.0-only"
 
 [dependencies]
 gurps-calc = { path = "crates/gurps-calc" }

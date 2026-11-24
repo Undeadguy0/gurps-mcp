@@ -2,6 +2,7 @@
 name = "gurps-calc"
 version = "0.1.0"
 edition = "2024"
+license = "GPL-3.0-only"
 description = "Расчёт персонажа GURPS 4e: чистые функции над данными из БД (все константы правил приходят во входных справочниках)"
 publish = false
 

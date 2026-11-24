@@ -128,4 +128,4 @@ CI пока не настроен.
 
 ## Лицензия
 
-Пока не выбрана (файла LICENSE нет; в манифесте `tools/sheet-bridge` указано `MIT OR Apache-2.0`).
+[GNU General Public License v3.0](LICENSE) (`GPL-3.0-only`).
